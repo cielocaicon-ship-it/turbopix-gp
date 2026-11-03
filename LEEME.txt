@@ -1,0 +1,24 @@
+TURBOPIX GP - Cómo publicarlo y jugar
+
+PUBLICAR EN GITHUB PAGES
+1. Crea un repositorio nuevo en GitHub (por ejemplo: turbopix).
+2. Add file > Upload files > sube el archivo index.html.
+3. Settings > Pages > Branch: main > Save.
+4. En 1 o 2 minutos te da el enlace: https://tuusuario.github.io/turbopix/
+
+JUGAR SOLO (celular)
+- Abre el enlace en Chrome (Android) o Safari (iPhone), no desde WhatsApp.
+- Toca JUGAR SOLO EN ESTE DISPOSITIVO, arma tu piloto y toca LISTO.
+- En iPhone toca "Permitir" cuando pida acceso al movimiento.
+- Gira el celular como un volante. Botones abajo: FRENO y ACELERAR.
+- Si gira al revés: INVERTIR GIRO. Si se va solo a un lado: CENTRAR.
+
+JUGAR EN GRUPO (PC + celulares, hasta 4)
+- Abre el enlace en el PC: sale un QR y un código de 4 letras.
+- Cada amigo escanea el QR con la cámara (o abre el enlace y escribe el código en UNIRME).
+- En el celular escribe su nombre y con las flechas arma su piloto, que se ve en el PC.
+- Cuando todos tocan LISTO, empieza la carrera con pantalla dividida en el PC.
+- Si recargas la página del PC, el código cambia y todos deben volver a entrar.
+
+EN COMPUTADOR (teclado)
+- Flechas para manejar, flecha abajo o Shift para frenar/derrapar, Esc para pausa.
