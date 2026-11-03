@@ -104,7 +104,7 @@ td{padding:8px 4px;border-bottom:1px solid var(--line)}td:last-child{text-align:
 .pd.on{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.45);filter:brightness(1.2)}
 .pedOv{position:fixed;left:0;right:0;bottom:0;z-index:3;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:max(14px,env(safe-area-inset-bottom,0px))}
 .pedOv .pd{opacity:.8;min-height:96px}.pedOv .pd.sm{min-height:56px}
-.ctrl .pads{margin-top:auto}.ctrl .pd.gas,.ctrl .pd.brk{min-height:min(36vh,260px)}
+
 #lights{position:fixed;left:50%;top:16%;transform:translateX(-50%);display:flex;gap:10px;padding:12px 16px;background:#0c0a1c;border:3px solid #2f2a6a;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:4}
 #lights i{width:clamp(26px,5vw,44px);aspect-ratio:1;border-radius:50%;background:#2a2440;box-shadow:inset 0 -4px 0 rgba(0,0,0,.4)}
 #lights i.r{background:#ff2a3a;box-shadow:0 0 18px #ff2a3a}#lights i.g{background:#35d07f;box-shadow:0 0 22px #35d07f}
@@ -123,6 +123,26 @@ td{padding:8px 4px;border-bottom:1px solid var(--line)}td:last-child{text-align:
 @keyframes pulse{to{transform:scale(1.03)}}
 #pause{z-index:8}
 @media (prefers-reduced-motion:reduce){.newrec{animation:none}}
+.pads{display:grid;grid-template-columns:1fr 1.3fr;gap:12px}.pads .lp,.pads .rp{display:grid;gap:12px;grid-auto-flow:column;grid-auto-columns:1fr}
+.tbar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}.tbar .chip{font-family:var(--disp);color:var(--ink);background:rgba(18,15,42,.8)}.tbar .chip.on,.chip.on{background:var(--cyan);color:#001a24}
+.rot{display:none;text-align:center;font-family:var(--disp);font-size:13px;color:var(--gold);padding:6px}
+@media (orientation:portrait) and (pointer:coarse){.rot{display:block}}
+@media (orientation:landscape){
+  .pedOv{top:0;padding:0;pointer-events:none}
+  .pedOv .tbar{position:absolute;top:max(54px,env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);pointer-events:auto;width:max-content;max-width:60vw}
+  .pedOv .pads{position:absolute;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:max(12px,env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;pointer-events:none}
+  .pedOv .lp,.pedOv .rp{display:flex;gap:10px;pointer-events:auto}
+  .pedOv .pd{min-height:min(42vh,190px);width:min(19vw,170px);opacity:.75}.pedOv .pd.sm{min-height:min(30vh,130px);width:min(13vw,110px)}}
+#hud.split #timer{top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 46px)}
+body.padland #minimap{bottom:auto!important;top:118px;width:clamp(70px,11vw,110px)}body.padland .vp .spd{bottom:auto;top:86px}
+.ctrl.racing{padding:10px max(10px,env(safe-area-inset-right,0px)) 10px max(10px,env(safe-area-inset-left,0px));gap:6px;overflow:hidden}
+.rc{flex:1;display:grid;grid-template-columns:1fr minmax(150px,32vw) 1fr;gap:10px;min-height:0}
+.rc .col,.rc .two{display:grid;gap:10px;min-height:0}.rc .two{grid-template-columns:1fr 1fr}
+.rc .pd{min-height:0;height:100%;font-size:clamp(18px,4.5vmin,30px)}
+.rc .mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:0;text-align:center;overflow:hidden}
+.rc .wheel{width:min(24vw,34vh,170px);border-width:10px;margin:0}.rc .wheel .hub{font-size:13px}.rc .big2{font-size:clamp(22px,6vmin,36px)}
+.rc .tbar .chip{font-size:10px;padding:5px 7px}
+@media (orientation:portrait){.rc{grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr}.rc .mid{grid-column:1/3;order:-1}.rc .wheel{width:min(40vw,26vh)}}
 .dpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:300px;width:100%;margin:0 auto}
 @media (max-width:760px){.grid2{grid-template-columns:1fr}.slots{grid-template-columns:repeat(2,1fr)}.card{padding:16px}.hint{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.btn:active{transform:none}}
@@ -347,21 +367,26 @@ $("btnMute").onclick=e=>{AU.on=!AU.on;e.target.textContent="SONIDO "+(AU.on?"ON"
    SENSOR DE INCLINACIÓN — celular vertical como control
    derecha/izquierda = girar · punta hacia adelante = acelerar · hacia atrás = frenar
    ========================================================= */
-const TILT={ok:false,gx:0,gy:0,a0:null,s:0,inv:false,listening:false,
-  // se gira el celular como un volante: se mide el ángulo de la gravedad en el plano de la pantalla
+const TILT={ok:false,gx:0,gy:0,a0:null,s:0,inv:false,sens:1,listening:false,
+  load(){try{this.inv=localStorage.getItem("turbopix-inv")==="1";const v=+localStorage.getItem("turbopix-sens");if(v>=0&&v<=2&&localStorage.getItem("turbopix-sens")!=null)this.sens=v}catch(e){}},
+  save(){try{localStorage.setItem("turbopix-inv",this.inv?"1":"0");localStorage.setItem("turbopix-sens",String(this.sens))}catch(e){}},
+  // se gira el celular como un volante (vertical u horizontal): se mide el ángulo de la gravedad en el plano de la pantalla
   async enable(){
     try{if(window.DeviceMotionEvent&&typeof DeviceMotionEvent.requestPermission==="function"){const r=await DeviceMotionEvent.requestPermission();if(r!=="granted")return false}}catch(e){return false}
     if(!this.listening){this.listening=true;addEventListener("devicemotion",e=>{const g=e.accelerationIncludingGravity;if(!g||g.x==null||g.y==null)return;
-      this.gx+=(g.x-this.gx)*.35;this.gy+=(g.y-this.gy)*.35;if(Math.hypot(g.x,g.y)>.5){this.ok=true;if(this.a0==null)this.calibrate()}})}
-    await new Promise(r=>setTimeout(r,1000));return this.ok},
-  calibrate(){if(!this.ok||Math.hypot(this.gx,this.gy)<3)return;this.a0=Math.atan2(this.gx,this.gy);this.s=0},
-  steer(){if(!this.ok)return 0;if(this.a0==null){this.calibrate();return 0}if(Math.hypot(this.gx,this.gy)<3)return this.s;
+      this.gx+=(g.x-this.gx)*.4;this.gy+=(g.y-this.gy)*.4;if(Math.hypot(g.x,g.y)>.5){this.ok=true;if(this.a0==null)this.calibrate()}})}
+    if(!this.ok)await new Promise(r=>setTimeout(r,1000));return this.ok},
+  calibrate(){if(!this.ok||Math.hypot(this.gx,this.gy)<1.2)return;this.a0=Math.atan2(this.gx,this.gy);this.s=0},
+  steer(){if(!this.ok)return 0;if(this.a0==null){this.calibrate();return 0}if(Math.hypot(this.gx,this.gy)<1.2)return this.s;
     let d=Math.atan2(this.gx,this.gy)-this.a0;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
-    let s=Math.max(-1,Math.min(1,d/.6));if(Math.abs(s)<.07)s=0;this.s=this.inv?-s:s;return this.s}};
+    const full=[.9,.6,.4][this.sens];let s=Math.max(-1,Math.min(1,d/full));
+    s=Math.abs(s)<.06?0:Math.sign(s)*Math.pow((Math.abs(s)-.06)/.94,1.35);if(this.inv)s=-s;
+    this.s+=(s-this.s)*.6;return this.s}};
+TILT.load();
 /* =========================================================
    MOTOR 3D
    ========================================================= */
-const glc=$("gl"),renderer=new THREE.WebGLRenderer({canvas:glc,antialias:true});
+const glc=$("gl"),renderer=new THREE.WebGLRenderer({canvas:glc,antialias:true,logarithmicDepthBuffer:true});
 renderer.setPixelRatio(Math.min(2,devicePixelRatio));
 const scene=new THREE.Scene(),hemi=new THREE.HemisphereLight(0xffffff,0x554477,.75);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xffffff,.75);sun.position.set(80,140,40);scene.add(sun);
@@ -474,7 +499,7 @@ function buildTrack(ti){
     geo.setIndex([0,2,1,1,2,3, 2,4,3,3,4,5, 0,4,2, 1,3,5]);geo.computeVertexNormals();
     r.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:0xffc83d,side:THREE.DoubleSide})));
     for(let k=0;k<4;k++){const s=new THREE.Mesh(new THREE.PlaneGeometry(1.2,6.3),mat(0x1a1a22));s.position.set(-w+1.5+k*(2*w-3)/3,H/2+.04,L/2);s.rotation.x=Math.atan2(H,L)-Math.PI/2;r.add(s)}
-    r.position.set(p.x,p.y,p.z);r.rotation.y=ang(i);r.position.addScaledVector(tan[i],-L);g.add(r);ramps.push({x:r.position.x,z:r.position.z,tx:tan[i].x,tz:tan[i].z,nx:nor[i].x,nz:nor[i].z,L,H,w})});
+    r.position.set(p.x,p.y,p.z);r.rotation.y=ang(i);r.position.addScaledVector(tan[i],-L);g.add(r);ramps.push({y:p.y,x:r.position.x,z:r.position.z,tx:tan[i].x,tz:tan[i].z,nx:nor[i].x,nz:nor[i].z,L,H,w})});
   T.pads.forEach(f=>{const i=Math.floor(f*N),p=pts[i],pg=new THREE.Group();
     for(let k=0;k<3;k++){const sh=new THREE.Shape();sh.moveTo(-2,0);sh.lineTo(0,1.4);sh.lineTo(2,0);sh.lineTo(2,.8);sh.lineTo(0,2.2);sh.lineTo(-2,.8);sh.closePath();
       const m=new THREE.Mesh(new THREE.ShapeGeometry(sh),new THREE.MeshBasicMaterial({color:k%2?0xff8a1a:0xffc83d,side:THREE.DoubleSide}));m.rotation.x=-Math.PI/2;m.position.set(0,.07,-2+k*1.6);pg.add(m)}
@@ -494,7 +519,7 @@ function buildTrack(ti){
     if(kind===0)[-1.5,0,1.5].forEach(o=>{const cx=x+n.x*o,cz=z+n.z*o,m=new THREE.Group();knock(m);m.position.set(cx,p.y,cz);g.add(m);cones.push({m,x:cx,z:cz,y:p.y,bx:cx,bz:cz,vx:0,vz:0,vy:0,t:0})});
     if(kind===1){const m=new THREE.Group();m.position.set(x,p.y,z);m.rotation.y=ang;g.add(m);
       if(ti===0){box(3.4,1.1,1,0xeeeeee,0,.55,0,m);for(let k=0;k<4;k++)box(.45,1.12,1.02,0xff3a4a,-1.2+k*.8,.55,0,m);box(3.6,.15,1.2,0x8a86a8,0,0,0,m);
-        [-.9,.9].forEach(o=>obstacles.push({x:x+n.x*o,z:z+n.z*o,r:1,idx:i,lat:lat+o}))}
+        obstacles.push({x,z,r:.75,hw:1.3,ax:n.x,az:n.z,idx:i,lat,ar:2.05})}
       else{const r=1.6;if(ti===3){[0,1,2].forEach(k=>part(new THREE.TorusGeometry(.95,.42,6,12),mat(k%2?0xffffff:0x23232e),0,.42+k*.75,0,m,Math.PI/2))}else if(ti===1){const b=part(new THREE.DodecahedronGeometry(r,0),mat(0x8a6a4a),0,r*.8,0,m);b.scale.set(1,.85,1)}else{box(2.6,2.6,2.6,0xff3fb4,0,1.5,0,m,true);const w=new THREE.Mesh(new THREE.BoxGeometry(3.1,3.1,3.1),new THREE.MeshBasicMaterial({color:0x3fd8ff,wireframe:true}));w.position.y=1.5;m.add(w);decor.push(w)}
         obstacles.push({x,z,r,idx:i,lat})}}
     if(kind===2){const m=new THREE.Group(),r=1.7;g.add(m);
@@ -524,6 +549,21 @@ function makeRacer(o){const st=CARS[o.car],obj=buildKart(o);scene.add(obj);
   return Object.assign({obj,shieldM:sh,x:0,z:0,y:0,air:0,vy:0,airT:0,h:0,spd:0,idx:0,prevIdx:0,lap:0,cp:[true,true,true],in:{s:0,a:0,b:0},
     turbo:0,shield:false,spin:0,drift:false,driftT:0,driftDir:0,fall:0,finished:false,time:0,prog:0,place:1,msg:"",msgT:0,
     maxS:36+st.vel*4.2,acc:13+st.ace*4.5,turn:1.25+st.man*.22,aiLane:(Math.random()-.5)*8,aiSkill:.9+Math.random()*.06},o)}
+function nearLocal(x,z,i0){const P=world.pts;let b=i0,bd=1e9;for(let k=-45;k<=45;k++){const i=(i0+k+N)%N,d=(P[i].x-x)**2+(P[i].z-z)**2;if(d<bd){bd=d;b=i}}return b}
+function triH(x,z,ax,az,ay,bx,bz,by,cx,cz,cy){const d=(bz-cz)*(ax-cx)+(cx-bx)*(az-cz);if(Math.abs(d)<1e-9)return null;
+  const u=((bz-cz)*(x-cx)+(cx-bx)*(z-cz))/d,v=((cz-az)*(x-cx)+(ax-cx)*(z-cz))/d,w=1-u-v;if(u<-1e-4||v<-1e-4||w<-1e-4)return null;return u*ay+v*by+w*cy}
+// altura de la superficie real de la carretera (los mismos triángulos que se dibujan) y de las rampas
+function roadH(x,z,i0){const P=world.pts,Q=world.nor,h=W/2+1.4;let best=null;
+  for(let k=-5;k<=5;k++){const j=(i0+k+N)%N,j1=(j+1)%N,p=P[j],q=P[j1],n=Q[j],m=Q[j1];
+    const Lx=p.x-n.x*h,Lz=p.z-n.z*h,Rx=p.x+n.x*h,Rz=p.z+n.z*h,L1x=q.x-m.x*h,L1z=q.z-m.z*h,R1x=q.x+m.x*h,R1z=q.z+m.z*h;
+    let y=triH(x,z,Lx,Lz,p.y,L1x,L1z,q.y,Rx,Rz,p.y);if(y==null)y=triH(x,z,Rx,Rz,p.y,L1x,L1z,q.y,R1x,R1z,q.y);if(y!=null&&(best==null||y>best))best=y}
+  return best==null?null:best+.02}
+function rampAt(x,z,lip){let top=null;world.ramps.forEach(r=>{const u=(x-r.x)*r.tx+(z-r.z)*r.tz,v=(x-r.x)*r.nx+(z-r.z)*r.nz;
+  if(Math.abs(v)<r.w&&u>=0&&u<=r.L+(lip?1.6:0)){const y=r.y+r.H*Math.min(u,r.L)/r.L;if(top==null||y>top)top=y}});return top}
+function surfH(x,z,i0,fb){const y=roadH(x,z,i0),b=y==null?fb:y,r=rampAt(x,z,true);return r==null?b:Math.max(b,r)}
+function clampFence(c){if(world.T.mode!=="wall")return;const i=nearLocal(c.x,c.z,c.idx),q=world.pts[i],nn=world.nor[i],lt=(c.x-q.x)*nn.x+(c.z-q.z)*nn.z,
+  fn=Math.abs(Math.sin(c.h)*nn.x+Math.cos(c.h)*nn.z),wl=W/2+7-(fn*2.4+Math.sqrt(Math.max(0,1-fn*fn))*1.4)-.2;
+  if(Math.abs(lt)>wl){const lim=Math.sign(lt)*wl;c.x-=nn.x*(lt-lim);c.z-=nn.z*(lt-lim)}}
 function nearest(x,z){const P=world.pts;let b=0,bd=1e9;for(let i=0;i<N;i++){const d=(P[i].x-x)**2+(P[i].z-z)**2;if(d<bd){bd=d;b=i}}return b}
 function inShort(x,z){if(!shortcut)return false;const {a,b}=shortcut,ax=b.x-a.x,az=b.z-a.z,t=Math.max(0,Math.min(1,((x-a.x)*ax+(z-a.z)*az)/(ax*ax+az*az)));return(a.x+ax*t-x)**2+(a.z+az*t-z)**2<4.5*4.5}
 function say(c,t){if(c.human==null)return;c.msg=t;c.msgT=1.5}
@@ -564,7 +604,7 @@ function physics(c,dt){
     if(c.drift&&Math.random()<.8)spark(c.x-Math.sin(c.h)*2,c.y+.3,c.z-Math.cos(c.h)*2,c.driftT>1.8?2:c.driftT>.8?1:0);
     if(c.turbo>0&&Math.random()<.6)spark(c.x-Math.sin(c.h)*2.6,c.y+c.air+1,c.z-Math.cos(c.h)*2.6,2)}
   c.x+=Math.sin(c.h)*c.spd*dt;c.z+=Math.cos(c.h)*c.spd*dt;
-  c.prevIdx=c.idx;c.idx=nearest(c.x,c.z);
+  c.prevIdx=c.idx;c.idx=nearLocal(c.x,c.z,c.idx);
   const q=P[c.idx],nn=world.nor[c.idx],lt=(c.x-q.x)*nn.x+(c.z-q.z)*nn.z,inS=inShort(c.x,c.z);
   // altura exacta del piso (interpolada) e inclinación según la pendiente
   const tq=world.tan[c.idx],uq=(c.x-q.x)*tq.x+(c.z-q.z)*tq.z,j=uq>=0?(c.idx+1)%N:(c.idx-1+N)%N,qj=P[j],sl=Math.hypot(qj.x-q.x,qj.z-q.z)||1;
@@ -574,8 +614,10 @@ function physics(c,dt){
   if(c.air>0||c.vy>0){c.airT+=dt;c.vy-=38*dt;c.air+=c.vy*dt;
     if(c.air<=0){c.air=0;c.vy=0;if(c.airT>.45){c.turbo=Math.max(c.turbo,.9);c.shake=.35;say(c,"¡ATERRIZAJE TURBO!");if(c.human!=null)AU.sfx("land")}c.airT=0}}
   else{if(!onR&&c.rampH>.2){c.air=c.rampH;c.airT=0;c.vy=c.spd>12?6+c.spd*.15:0;if(c.spd>12&&c.human!=null){AU.sfx("jump");say(c,"¡SALTO!")}}
-    c.rampH=onR?rh:0;c.pitch=onR?-Math.atan2(onR.H,onR.L)*Math.sign(fw||1):-Math.atan(slope*fw)}
-  c.y=gy+(c.air>0?0:rh);
+    c.rampH=onR?rh:0}
+  if(c.air>0)c.y=gy;
+  else{const fx=Math.sin(c.h),fz=Math.cos(c.h),S=(a,l)=>surfH(c.x+fx*a+fz*l,c.z+fz*a-fx*l,c.idx,gy),hF=Math.max(S(1.35,1),S(1.35,-1)),hR=Math.max(S(-1.35,1),S(-1.35,-1));
+    c.y=Math.max((hF+hR)/2,surfH(c.x,c.z,c.idx,gy));c.pitch=-Math.atan2(hF-hR,2.7)}
   const fn=Math.abs(Math.sin(c.h)*nn.x+Math.cos(c.h)*nn.z),ext=fn*2.4+Math.sqrt(Math.max(0,1-fn*fn))*1.4,wl=W/2+7-ext-.2;
   if(T.mode==="wall"&&!inS&&Math.abs(lt)>wl){const lim=Math.sign(lt)*wl;c.x-=nn.x*(lt-lim);c.z-=nn.z*(lt-lim);c.spd*=Math.pow(.4,dt);if(c.human!=null&&!(c.scrT>0)){AU.sfx("scrape");c.scrT=.25}
     let d=Math.atan2(world.tan[c.idx].x,world.tan[c.idx].z)-c.h;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;if(Math.abs(d)<Math.PI/2)c.h+=d*Math.min(1,dt*5);
@@ -590,16 +632,20 @@ function physics(c,dt){
   c.skT=(c.skT||0)-dt;if(c.air<=0&&c.fall<=0&&c.skT<=0&&(c.drift||c.spin>0||(I.b>.5&&c.spd>22))&&Math.abs(lt)<W/2+1){skidMark(c);c.skT=.035}
   if(c.air<=0&&Math.abs(lt)>W/2+1.4&&c.spd>12&&(T.ti===1||world.ti===1||world.ti===3)&&Math.random()<.35)spark(c.x-Math.sin(c.h)*1.8,c.y+.3,c.z-Math.cos(c.h)*1.8,4);
   if(c.human!=null&&c.air<=0&&!c.finished){const t=world.tan[c.idx],fw=Math.sin(c.h)*t.x+Math.cos(c.h)*t.z;c.wrongT=fw<-.4&&c.spd>4?(c.wrongT||0)+dt:0;if(c.wrongT>1){say(c,"¡VAS AL REVÉS!");AU.sfx("buzz");c.wrongT=.4}}
-  world.obstacles.forEach(o=>{const dx=c.x-o.x,dz=c.z-o.z,d=Math.hypot(dx,dz)||.01;if(d<o.r+1.5&&c.air<1.5){c.x=o.x+dx/d*(o.r+1.5);c.z=o.z+dz/d*(o.r+1.5);if(c.spd>12&&c.human!=null)AU.sfx("bump");c.spd=Math.min(c.spd,10)*.8}});
+  world.obstacles.forEach(o=>{let ox=o.x,oz=o.z;if(o.hw){const u=Math.max(-o.hw,Math.min(o.hw,(c.x-o.x)*o.ax+(c.z-o.z)*o.az));ox+=o.ax*u;oz+=o.az*u}
+    const dx=c.x-ox,dz=c.z-oz,d=Math.hypot(dx,dz)||.01;if(d<o.r+1.5&&c.air<1.5){const nx=dx/d,nz=dz/d;c.x=ox+nx*(o.r+1.5);c.z=oz+nz*(o.r+1.5);
+    // choque: frena según qué tan de frente pegó y se desliza hacia un lado (no se queda pegado)
+    const fx=Math.sin(c.h)*Math.sign(c.spd||1),fz=Math.cos(c.h)*Math.sign(c.spd||1),dot=-(fx*nx+fz*nz);
+    if(dot>0){if(dot>.35&&Math.abs(c.spd)>12){if(c.human!=null){AU.sfx("bump");c.shake=.3}c.spd*=1-.5*dot}const side=Math.cos(c.h)*nx-Math.sin(c.h)*nz;c.h+=(side>=0?1:-1)*.06*dot}}});
   world.coins.forEach(k=>{if(k.t>0||c.air>2)return;if((c.x-k.x)**2+(c.z-k.z)**2<4.5){k.t=8;k.m.visible=false;c.coins=Math.min(10,(c.coins||0)+1);if(c.human!=null)AU.sfx("coin")}});
   world.cones.forEach(k=>{if(k.t>0||c.air>1)return;if((c.x-k.x)**2+(c.z-k.z)**2<2.8){k.t=5;k.vx=Math.sin(c.h)*c.spd*.7+(Math.random()-.5)*8;k.vz=Math.cos(c.h)*c.spd*.7+(Math.random()-.5)*8;k.vy=5+Math.abs(c.spd)*.1;c.spd*=.92;if(c.human!=null)AU.sfx("bump")}});
   if(c.air<=0)world.pads.forEach(o=>{if((c.x-o.x)**2+(c.z-o.z)**2<10&&c.turbo<.8){c.turbo=1.2;say(c,"¡TURBO!");if(c.human!=null)AU.sfx("turbo")}});
   world.boxes.forEach(bx=>{if(bx.cd<=0&&(c.x-bx.x)**2+(c.z-bx.z)**2<7.5&&c.air<3){bx.cd=3;bx.m.visible=false;if(c.human!=null)AU.sfx("roll");giveItem(c)}});
   world.oils.forEach(o=>{if(o.life<=0||(o.grace>0&&o.owner===c)||c.air>.5)return;if(c.spin<=0&&(c.x-o.x)**2+(c.z-o.z)**2<5){hit(c);o.life=0}});
-  place(c)}
+  clampFence(c);place(c)}
 function place(c){const o=c.obj;o.position.set(c.x,c.y+c.air,c.z);o.rotation.y=c.h+(c.spin>0?c.spin*9:0)+(c.drift?c.driftDir*.35:0);
-  const b=o.userData.body;b.rotation.z=-(c.in.s||0)*.08;b.rotation.x=c.air>0?-Math.max(-.3,Math.min(.35,c.vy*.03)):(c.pitch||0);
-  if(c.car===0)b.position.y=.1+Math.sin(performance.now()/200+c.x)*.08;
+  const b=o.userData.body,roll=-(c.in.s||0)*.05;b.rotation.z=roll;b.position.y=.05+Math.abs(roll)*1.3;b.rotation.x=c.air>0?-Math.max(-.3,Math.min(.35,c.vy*.03)):(c.pitch||0);
+  if(c.car===0)b.position.y+=.08+Math.sin(performance.now()/200+c.x)*.08;
   o.userData.shadow.position.y=-c.air+.05;o.userData.shadow.visible=c.fall<=0;
   if(o.userData.flame)o.userData.flame.scale.set(1,1+(c.turbo>0?1.2:0)+Math.random()*.3,1);
   c.shieldM.visible=c.shield;c.shieldM.position.set(c.x,c.y+c.air+1.2,c.z);c.shieldM.rotation.y+=.02}
@@ -610,7 +656,10 @@ function aiDrive(c,dt){
   c.in={s:Math.max(-1,Math.min(1,a*3)),a:1,b:Math.abs(a)>.9&&c.spd>25?1:0};
   if(Math.random()<dt*.15)c.aiLane=(Math.random()-.5)*9;
   for(const o of world.obstacles){if(o.idx==null)continue;const d=(o.idx-c.idx+N)%N;if(d<2||d>50)continue;
-    if(Math.abs(o.lat-c.aiLane)<o.r+2.8){c.aiLane=Math.max(-(W/2-2.2),Math.min(W/2-2.2,o.lat+(o.lat>0?-1:1)*(o.r+3.4)));break}}
+    const rr=o.ar||o.r;if(Math.abs(o.lat-c.aiLane)<rr+2.8){c.aiLane=Math.max(-(W/2-2.2),Math.min(W/2-2.2,o.lat+(o.lat>0?-1:1)*(rr+3.4)));break}}
+  // si casi no avanza (aunque vaya rápido), retrocede y cambia de carril
+  if(c.spin>0||c.revT>0||c.fall>0||c.air>0||race.t<3){c.pgT=0;c.pg0=c.prog||0}
+  c.pgT=(c.pgT||0)+dt;if(c.pgT>2.2){if((c.prog||0)-(c.pg0||0)<8&&!c.finished){c.revT=.8;c.aiLane=-c.aiLane||((Math.random()<.5?-1:1)*4)}c.pg0=c.prog||0;c.pgT=0}
   c.stuckT=Math.abs(c.spd)<4&&c.spin<=0?(c.stuckT||0)+dt:0;if(c.stuckT>1)c.revT=.9;
   if(c.revT>0){c.revT-=dt;c.in={s:a<0?1:-1,a:0,b:1};c.stuckT=0;c.spd=Math.max(-10,c.spd-20*dt)}}
 
@@ -622,7 +671,7 @@ function clearRace(){race.cars.forEach(c=>{scene.remove(c.obj);scene.remove(c.sh
 function startRace(){
   clearRace();buildTrack(G.track);AU.tempo=1;AU.setTrack(G.track);
   const hum=G.players.filter(p=>p&&p.ready),cars=[],used=new Set(hum.map(p=>p.car));
-  hum.forEach(p=>cars.push(makeRacer({...look(p),human:p.slot,name:pname(p),col:PCOL[p.slot],ai:false})));
+  hum.forEach(p=>cars.push(makeRacer({...look(p),human:p.slot,name:pname(p),col:PCOL[p.slot],ai:!!p.away})));
   let k=0;while(G.mode!=="time"&&cars.length<4){let car=k%4;for(let j=0;j<4&&used.has(car);j++)car=(car+1)%4;used.add(car);
     cars.push(makeRacer({human:null,name:"BOT "+(k+1),car,sp:[3,5,6,7,8,2][(k+Math.floor(Math.random()*3))%6],hair:(k*2+1)%6,hc:k%6,skin:(k*2)%5,outfit:OUTFITS[(k*2+1)%6],hat:k%3,col:"#9a96b8",ai:true,aiSkill:[.8,.9,.98][G.diff]+Math.random()*.05}));k++}
   cars.forEach((c,j)=>{const i=(N-10-Math.floor(j/2)*6)%N,p=world.pts[i],n=world.nor[i],off=j%2?-4:4;
@@ -654,7 +703,7 @@ const ROWS=[["name","NOMBRE"],["sp","PERSONAJE"],["hair","PEINADO"],["hc","PELO"
 const LISTS={sp:9,hair:6,hc:6,skin:5,out:6,hat:3,car:4};
 const cycle=(s,k,d)=>{s[k]=(s[k]+d+LISTS[k])%LISTS[k]};
 const hexs=c=>"#"+c.toString(16).padStart(6,"0");
-const allReady=()=>G.players.some(Boolean)&&G.players.every(p=>!p||p.ready);
+const allReady=()=>G.players.some(p=>p&&!p.away)&&G.players.every(p=>!p||p.ready||p.away);
 
 /* vistas previas 3D: un solo renderizador que copia la imagen a cada lienzo */
 let prevR=null,prevScene=null,prevCam=null,prevRot=.6;const prevCache={};
@@ -683,7 +732,7 @@ function selHTML(s){const c=CARS[s.car],bar=v=>`<div class="bar">${[1,2,3,4,5].m
    <div class="stat">VEL${bar(c.vel)}</div><div class="stat">ACE${bar(c.ace)}</div><div class="stat">MAN${bar(c.man)}</div>`}
 // panel de cada jugador en la pantalla grande (se maneja con las flechas del celular)
 function panelHTML(p){const val=k=>k==="name"?esc(pname(p)):k==="sp"?SPECIES[p.sp].n:p.sp&&(k==="hair"||k==="hc"||(k==="skin"&&SPECIES[p.sp].fur!=null))?"—":["hc","skin","out"].includes(k)?`<i class="dot" style="background:${hexs((k==="hc"?HAIRC:k==="skin"?(p.sp?FURS:SKINS):OUTFITS)[p[k]])}"></i>`:k==="hair"?HAIRS[p.hair]:k==="hat"?HATS[p.hat]:CARS[p.car].name;
-  return`<div class="pnl ${p.ready?"rdy":""}" style="--sc:${PCOL[p.slot]}"><div class="ph"><b>P${p.slot+1}</b><span>${p.ready?"LISTO":p.slot===G.local?"en este dispositivo":"eligiendo..."}</span></div>
+  return`<div class="pnl ${p.ready?"rdy":""}" style="--sc:${PCOL[p.slot]}"><div class="ph"><b>P${p.slot+1}</b><span>${p.away?"desconectado...":p.ready?"LISTO":p.slot===G.local?"en este dispositivo":"eligiendo..."}</span></div>
    <canvas class="pv" data-pv="${p.slot}" width="240" height="240"></canvas>
    ${ROWS.map(([k,l],i)=>`<div class="opt ${p.row===i&&!p.ready&&p.input==="remote"?"on":""}"><span>${l}</span><span>${i>0&&p.row===i&&!p.ready&&p.input==="remote"?"◀ ":""}${val(k)}${i>0&&p.row===i&&!p.ready&&p.input==="remote"?" ▶":""}</span></div>`).join("")}</div>`}
 function updPanels(){const el=$("panels");if(!el)return;const ps=G.players.filter(Boolean);
@@ -733,7 +782,7 @@ function menuAct(d){AU.sfx("click");
   if(LISTS[d.a]!=null&&G.scr==="select"){const s=G.players[G.local];if(d.v!=null)s[d.a]=+d.v;else cycle(s,d.a,+d.d);render();return}
   if(d.a==="back"){G.players[G.local]=null;G.local=null;G.scr="lobby"}
   if(d.a==="ready"){const p=G.players[G.local],touch=matchMedia("(pointer:coarse)").matches;$("sensorMsg").textContent="Activando sensor...";
-    (touch?TILT.enable():Promise.resolve(false)).then(ok=>{p.input=ok?"tilt":touch?"buttons":"keys";p.ready=true;G.scr="lobby";render();NET.sendAll();tryStart()});return}
+    const tp=touch?TILT.enable():Promise.resolve(false);if(touch){goLand();wake()}tp.then(ok=>{p.input=ok?"tilt":touch?"buttons":"keys";p.ready=true;G.scr="lobby";render();NET.sendAll();tryStart()});return}
   if(d.a==="start"||d.a==="retry"){startRace();return}
   if(d.a==="nextTrack"){G.race++;G.track=G.race;startRace();return}
   if(d.a==="menu"){clearRace();G.scr="lobby";G.race=0;G.table={};G.players.forEach(p=>p&&(p.ready=false))}
@@ -746,7 +795,7 @@ function drawQR(){const el=$("qr");if(!el)return;if(!NET.url||!window.QRCode){el
 /* HUD por jugador y pantalla dividida */
 function views(cut=0){const hum=race.cars.filter(c=>c.human!=null),list=hum.length?hum:[race.cars[0]],n=list.length,port=innerHeight>innerWidth;
   return list.map((c,i)=>{let r;if(n===1)r=[0,0,1,1-cut];else if(n===2)r=port?[0,i*.5,1,.5]:[i*.5,0,.5,1];else r=[(i%2)*.5,Math.floor(i/2)*.5,.5,.5];return{c,r,cam:cams[i]}})}
-function buildVPs(){document.querySelectorAll(".vp").forEach(e=>e.remove());views().forEach((v,i)=>{const d=document.createElement("div");d.className="vp";d.id="vp"+i;
+function buildVPs(){document.querySelectorAll(".vp").forEach(e=>e.remove());$("hud").classList.toggle("split",views().length>1);views().forEach((v,i)=>{const d=document.createElement("div");d.className="vp";d.id="vp"+i;
   d.innerHTML=`<div class="pos">1<small>/4</small></div><div class="lap">VUELTA 1/${LAPS}</div><div class="cn"><i></i><span>0</span></div>${v.c.human!=null?`<div class="tag" style="background:${v.c.col}">${esc(v.c.name)}</div>`:""}<div class="spd">0 <small>KM/H</small></div><div class="msg"></div>`;$("hud").appendChild(d)})}
 let mini=null;
 function drawMiniBase(){const c=document.createElement("canvas");c.width=c.height=150;const x=c.getContext("2d"),P=world.pts;let a=1e9,b=-1e9,e=1e9,f=-1e9;
@@ -760,97 +809,168 @@ function drawMini(){const m=$("minimap").getContext("2d");m.clearRect(0,0,150,15
    CONTROLES: botones de acelerar/frenar + giro con el celular
    ========================================================= */
 const KEYS={};addEventListener("keydown",e=>{KEYS[e.code]=1;if(e.code.startsWith("Arrow")&&!(e.target&&e.target.tagName==="INPUT"))e.preventDefault()});addEventListener("keyup",e=>{KEYS[e.code]=0});
+addEventListener("blur",()=>{Object.keys(KEYS).forEach(k=>KEYS[k]=0)});
 const PED={a:0,b:0,l:0,r:0};
-function hold(el,k){const on=e=>{e.preventDefault();PED[k]=1;el.classList.add("on");if(navigator.vibrate)navigator.vibrate(8)},off=e=>{e.preventDefault();PED[k]=0;el.classList.remove("on")};
-  el.addEventListener("pointerdown",on);["pointerup","pointercancel","pointerleave"].forEach(ev=>el.addEventListener(ev,off));el.addEventListener("contextmenu",e=>e.preventDefault())}
-function padHTML(withSteer){return`<div class="pads">${withSteer?`<div class="steer"><button class="pd sm" data-h="l">◀</button><button class="pd sm" data-h="r">▶</button></div>`:""}
-  <button class="pd brk" data-h="b">FRENO</button><button class="pd gas" data-h="a">ACELERAR</button></div>`}
+function hold(el,k){const on=e=>{e.preventDefault();try{el.setPointerCapture(e.pointerId)}catch(_){}PED[k]=1;el.classList.add("on");if(navigator.vibrate)navigator.vibrate(8)},off=e=>{e.preventDefault();PED[k]=0;el.classList.remove("on")};
+  el.addEventListener("pointerdown",on);["pointerup","pointercancel","lostpointercapture"].forEach(ev=>el.addEventListener(ev,off));el.addEventListener("contextmenu",e=>e.preventDefault())}
+const SENS=["BAJA","MEDIA","ALTA"];
+// botones de carrera: izquierda y derecha (en horizontal quedan en las esquinas, como un control)
+function padHTML(withSteer){return`<div class="pads"><div class="lp">${withSteer?`<button class="pd sm" data-h="l">◀</button><button class="pd sm" data-h="r">▶</button>`:`<button class="pd brk" data-h="b">FRENO</button>`}</div>
+  <div class="rp">${withSteer?`<button class="pd brk" data-h="b">FRENO</button>`:""}<button class="pd gas" data-h="a">ACELERAR</button></div></div>`}
+function tiltBar(){return`<div class="tbar"><button class="chip" data-t="cal">CENTRAR</button><button class="chip ${TILT.inv?"on":""}" data-t="inv">INVERTIR GIRO</button><button class="chip" data-t="sens">SENSIBILIDAD: ${SENS[TILT.sens]}</button></div>`}
+function bindTilt(root){root.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{const t=b.dataset.t;
+  if(t==="cal"){TILT.calibrate();b.textContent="¡CENTRADO!";setTimeout(()=>b.textContent="CENTRAR",900)}
+  if(t==="inv"){TILT.inv=!TILT.inv;TILT.save();b.classList.toggle("on",TILT.inv)}
+  if(t==="sens"){TILT.sens=(TILT.sens+1)%3;TILT.save();b.textContent="SENSIBILIDAD: "+SENS[TILT.sens]}})}
 function bindPads(root){root.querySelectorAll("[data-h]").forEach(el=>hold(el,el.dataset.h))}
 function pedals(on,steer){let z=$("pedOv");if(!on){if(z){z.remove();Object.keys(PED).forEach(k=>PED[k]=0)}return}if(z)return;
   z=document.createElement("div");z.id="pedOv";z.className="pedOv";
-  z.innerHTML=(steer?"":`<div class="row" style="margin-bottom:8px"><button class="btn ghost" id="tCal" style="flex:1;padding:8px;font-size:12px;background:rgba(18,15,42,.7)">CENTRAR</button><button class="btn ghost ${TILT.inv?"on":""}" id="tInv" style="flex:1;padding:8px;font-size:12px;background:rgba(18,15,42,.7)">INVERTIR GIRO</button></div>`)+padHTML(steer);
-  document.body.appendChild(z);bindPads(z);
-  if(!steer){$("tCal").onclick=()=>TILT.calibrate();$("tInv").onclick=e=>{TILT.inv=!TILT.inv;e.currentTarget.classList.toggle("on",TILT.inv)}}}
+  z.innerHTML=(steer?"":tiltBar())+padHTML(steer)+`<div class="rot">Gira el celular en horizontal para manejar mejor</div>`;
+  document.body.appendChild(z);bindPads(z);bindTilt(z)}
 function localInput(p){
   if(p.input==="tilt")return{s:TILT.steer(),a:PED.a,b:PED.b};
   if(p.input==="buttons")return{s:PED.l-PED.r,a:PED.a,b:PED.b};
   const k=KEYS;return{s:(k.ArrowLeft||k.KeyA?1:0)-(k.ArrowRight||k.KeyD?1:0),a:k.ArrowUp||k.KeyW?1:0,b:k.ArrowDown||k.KeyS||k.ShiftLeft?1:0}}
+// pantalla siempre encendida y horizontal (si el celular lo permite)
+let wakeL=null;function wake(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request("screen").then(l=>wakeL=l).catch(()=>{})}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&wakeL)wake()});
+function goLand(){try{const d=document.documentElement,f=d.requestFullscreen||d.webkitRequestFullscreen;if(!f||document.fullscreenElement)return;
+  Promise.resolve(f.call(d)).then(()=>{if(screen.orientation&&screen.orientation.lock)return screen.orientation.lock("landscape")}).catch(()=>{})}catch(e){}}
 
 /* =========================================================
    RED (PeerJS): pantalla principal y mando remoto
+   - cada celular tiene un id propio: si se sale y vuelve, recupera su puesto
+   - latido cada segundo: si un celular deja de responder, se libera su puesto
    ========================================================= */
 const PREFIX="turbopix-lp-";
-const NET={code:"",url:"",msg:"Preparando sala...",conns:[null,null,null,null],
-  buzz(slot){const cn=this.conns[slot];if(cn&&cn.open)cn.send({t:"buzz"});else if(navigator.vibrate)navigator.vibrate(120)},
+const newCode=()=>{const L="ABCDEFGHJKLMNPQRSTUVWXYZ";return[0,0,0,0].map(()=>L[(Math.random()*L.length)|0]).join("")};
+const NET={code:"",url:"",msg:"Preparando sala...",conns:[null,null,null,null],peer:null,
+  buzz(slot){const cn=this.conns[slot];if(cn&&cn.open){try{cn.send({t:"buzz"})}catch(e){}}else if(slot===G.local&&navigator.vibrate)navigator.vibrate(120)},
   sendAll(){this.conns.forEach((cn,slot)=>{const p=G.players[slot];if(!cn||!cn.open||!p)return;const c=race.cars.find(o=>o.human===slot);
-    cn.send({t:"ui",scr:G.scr,ready:p.ready,row:ROWS[p.row][1],place:c?c.place:0,lap:c?Math.min(LAPS,Math.max(1,c.lap)):1,champ:G.mode==="champ"})})},
-  host(){const L="ABCDEFGHJKLMNPQRSTUVWXYZ";this.code=[0,0,0,0].map(()=>L[(Math.random()*L.length)|0]).join("");
-    this.url=location.href.split("#")[0]+"#mando-"+this.code;
-    const fail=t=>{this.msg=t;this.url="";if(G.scr==="lobby")render()};
+    try{cn.send({t:"ui",scr:G.scr,ready:!!p.ready,row:ROWS[p.row][1],place:c?c.place:0,n:race.cars.length||4,lap:c?Math.min(LAPS,Math.max(1,c.lap)):1,champ:G.mode==="champ",fin:!!(c&&c.finished),paused:!!race.paused,cd:race.on&&race.count>0})}catch(e){}})},
+  host(){const fail=t=>{this.msg=t;this.url="";if(G.scr==="lobby")render()};
     if(!window.Peer||!window.RTCPeerConnection)return fail("La conexión entre celulares no funciona aquí. Publica el juego en GitHub Pages para jugar en grupo.");
-    try{const peer=new Peer(PREFIX+this.code),to=setTimeout(()=>fail("Sin conexión a la red. Puedes jugar solo en este dispositivo."),8000);
+    const start=()=>{this.code=newCode();this.url=location.href.split("#")[0]+"#mando-"+this.code;let peer;
+      try{peer=new Peer(PREFIX+this.code)}catch(e){return fail("La conexión entre celulares no funciona aquí.")}
+      this.peer=peer;const to=setTimeout(()=>fail("Sin conexión a internet. Puedes jugar solo en este dispositivo."),9000);
       peer.on("open",()=>{clearTimeout(to);this.msg="O abre el juego en el celular y escribe el código. Entran hasta 4 pilotos.";if(G.scr==="lobby")render()});
-      peer.on("error",()=>{clearTimeout(to);fail("La conexión entre celulares no funciona aquí. Publica el juego en GitHub Pages para jugar en grupo.")});
-      peer.on("connection",cn=>cn.on("open",()=>{const slot=G.players.findIndex(p=>!p);if(slot<0){cn.send({t:"full"});return}
-        this.conns[slot]=cn;G.players[slot]={...newSel(slot),input:"remote"};
-        cn.on("data",m=>this.onMsg(slot,m));
-        cn.on("close",()=>{this.conns[slot]=null;G.players[slot]=null;const c=race.cars.find(o=>o.human===slot);if(c){c.human=null;c.ai=true;buildVPs()}updPanels()});
-        updPanels();this.sendAll()}))}
-    catch(e){fail("La conexión entre celulares no funciona aquí.")}},
+      peer.on("disconnected",()=>{setTimeout(()=>{try{if(!peer.destroyed&&peer.disconnected)peer.reconnect()}catch(e){}},1500)});
+      peer.on("error",e=>{const t=e&&e.type;clearTimeout(to);
+        if(t==="unavailable-id"){try{peer.destroy()}catch(_){}start();return}
+        if(t==="peer-unavailable")return;
+        if(t==="network"||t==="server-error"||t==="socket-error"||t==="socket-closed"||t==="disconnected"){this.msg="Reconectando la sala...";if(G.scr==="lobby")render();
+          setTimeout(()=>{try{if(!peer.destroyed&&peer.disconnected)peer.reconnect()}catch(_){}},2500);return}
+        fail("La conexión entre celulares no funciona aquí. Puedes jugar solo en este dispositivo.")});
+      peer.on("connection",cn=>this.accept(cn))};
+    start();setInterval(()=>this.watch(),1000)},
+  accept(cn){let slot=-1;
+    const bind=(cid,name)=>{if(slot>=0)return;
+      if(cid)slot=G.players.findIndex(p=>p&&p.cid===cid);
+      if(slot>=0){const old=this.conns[slot];if(old&&old!==cn){try{old.close()}catch(e){}}}
+      else{slot=G.players.findIndex(p=>!p);
+        if(slot<0){const aw=G.players.findIndex(p=>p&&p.away&&p.input==="remote");if(aw>=0){this.remove(aw);slot=aw}}
+        if(slot<0){try{cn.send({t:"full"})}catch(e){}setTimeout(()=>{try{cn.close()}catch(e){}},500);return}
+        G.players[slot]={...newSel(slot),input:"remote",cid:cid||null,name:name||""}}
+      const p=G.players[slot];this.conns[slot]=cn;p.away=false;p.lastSeen=Date.now();if(name&&!p.name)p.name=name;
+      const c=race.cars.find(o=>o.human===slot);if(c&&!c.finished){c.ai=false;c.remote={s:0,a:0,b:0}}
+      if(G.scr==="lobby")updPanels();this.sendAll()};
+    cn.on("open",()=>{const t=setTimeout(()=>bind(null,""),1500);
+      cn.on("data",m=>{if(!m||typeof m!=="object")return;
+        if(slot<0){if(m.t==="hello"){clearTimeout(t);bind(String(m.cid||"").slice(0,40),String(m.name||"").toUpperCase().slice(0,12))}return}
+        if(this.conns[slot]!==cn)return;const p=G.players[slot];if(!p)return;p.lastSeen=Date.now();this.onMsg(slot,m)})});
+    const lost=()=>{if(slot>=0&&this.conns[slot]===cn)this.drop(slot)};
+    cn.on("close",lost);cn.on("error",lost)},
+  // el celular se fue: un bot maneja su carro mientras vuelve
+  drop(slot){const cn=this.conns[slot];this.conns[slot]=null;try{cn&&cn.close()}catch(e){}
+    const p=G.players[slot];if(!p)return;p.away=true;p.awayT=Date.now();p.ready=G.scr==="lobby"?false:p.ready;
+    const c=race.cars.find(o=>o.human===slot);if(c)c.ai=true;
+    if(G.scr==="lobby")updPanels()},
+  // no volvió: se libera el puesto
+  remove(slot){this.conns[slot]=null;G.players[slot]=null;const c=race.cars.find(o=>o.human===slot);
+    if(c){c.human=null;c.ai=true;c.col="#9a96b8";if(G.scr==="race")buildVPs()}
+    if(G.scr==="lobby"){updPanels();tryStart()}},
+  watch(){const now=Date.now();
+    G.players.forEach((p,slot)=>{if(!p||p.input!=="remote")return;
+      if(this.conns[slot]&&now-(p.lastSeen||now)>5000)this.drop(slot);
+      if(p.away&&now-p.awayT>(G.scr==="lobby"?6000:25000))this.remove(slot)});
+    if(G.scr!=="lobby"&&!G.players.some(Boolean)){clearRace();G.scr="lobby";G.race=0;G.table={};render()}
+    this.sendAll()},
   onMsg(slot,m){const p=G.players[slot];if(!p)return;
-    if(m.t==="in"){const c=race.cars.find(o=>o.human===slot);if(c)c.remote={s:+m.s||0,a:+m.a||0,b:+m.b||0};return}
+    if(m.t==="in"){const c=race.cars.find(o=>o.human===slot);if(c){const f=v=>Math.max(-1,Math.min(1,+v||0));c.remote={s:f(m.s),a:Math.max(0,f(m.a)),b:Math.max(0,f(m.b))}}return}
+    if(m.t==="hb"||m.t==="hello")return;
     if(m.t==="nav"&&!p.ready&&G.scr==="lobby"){const RL=ROWS.length;if(m.k==="up")p.row=(p.row+RL-1)%RL;if(m.k==="down")p.row=(p.row+1)%RL;
       const k=ROWS[p.row][0];if(k!=="name"&&(m.k==="left"||m.k==="right"))cycle(p,k,m.k==="right"?1:-1)}
     if(m.t==="name")p.name=String(m.v||"").toUpperCase().slice(0,12);
     if(m.t==="ready"&&G.scr==="lobby"){p.ready=!!m.v;tryStart()}
+    if(m.t==="pause"&&G.scr==="race"){setPause(!race.paused)}
     if(m.t==="next"&&(G.scr==="results"||G.scr==="final")){menuAct({a:G.scr==="results"&&G.mode==="champ"?"nextTrack":"retry"});return}
     if(m.t==="menu"&&G.scr!=="race"){menuAct({a:"menu"});return}
     if(G.scr==="lobby")updPanels();this.sendAll()}};
 
-// MODO MANDO: el celular que escaneó el QR (solo control y nombre)
+// MODO MANDO: el celular que escaneó el QR (control y nombre). Se reconecta solo.
 function startController(code){
   $("game").remove();$("hud").remove();document.querySelector(".top").remove();
-  let conn=null,st=null,phase="",timer=null,name="",nameT=null,useTilt=false;
+  let cid="";try{cid=localStorage.getItem("turbopix-cid")||""}catch(e){}
+  if(!cid){cid=Math.random().toString(36).slice(2)+Date.now().toString(36);try{localStorage.setItem("turbopix-cid",cid)}catch(e){}}
+  let name="";try{name=localStorage.getItem("turbopix-name")||""}catch(e){}
+  let peer=null,conn=null,st=null,phase="",nameT=null,lastMsg=0,tries=0,dead=false,rT=null,busy=false;
   const root=document.createElement("div");root.className="ctrl";document.body.appendChild(root);
-  const send=m=>{if(conn&&conn.open)conn.send(m)};
+  const send=m=>{if(conn&&conn.open){try{conn.send(m)}catch(e){}}};
   const show=()=>{
-    const ph=!conn?"wait":!st?"wait":st.scr==="race"?"race":st.scr==="lobby"?(st.ready?"ready":"select"):"end";
-    if(ph===phase){if(ph==="select")$("rowLbl").textContent=st.row;if(ph==="race"){$("cpos").textContent=(st.place||"-")+"/4";$("clap").textContent="VUELTA "+st.lap+"/"+LAPS}return}
+    const ph=dead?"dead":!conn||!st?"wait":st.scr==="race"?"race":st.scr==="lobby"?(st.ready?"ready":"select"):"end";
+    root.classList.toggle("racing",ph==="race");
+    if(ph===phase){if(ph==="select"&&$("rowLbl"))$("rowLbl").textContent=st.row;
+      if(ph==="race"&&$("cpos")){$("cpos").textContent=st.fin?"¡META!":(st.place||"-")+"/"+(st.n||4);$("clap").textContent=st.paused?"PAUSA":"VUELTA "+st.lap+"/"+LAPS}return}
     phase=ph;Object.keys(PED).forEach(k=>PED[k]=0);
-    if(ph==="wait")root.innerHTML=`<h1 class="logo">TURBOPIX GP</h1><p class="lead">Conectando a la sala ${code}...</p>`;
+    if(ph==="dead")return;
+    if(ph==="wait")root.innerHTML=`<h1 class="logo">TURBOPIX GP</h1><p class="lead">${tries>1?"Reconectando con":"Conectando a"} la sala ${esc(code)}...</p>
+      ${tries>3?`<p class="small">Si recargaron la pantalla grande, el código cambió: escanea el QR nuevo.</p>`:""}<button class="btn ghost" id="rty">REINTENTAR AHORA</button>`;
     if(ph==="select"){root.innerHTML=`<h1 class="logo" style="font-size:30px">TU PILOTO</h1>
       <div class="lbl">Tu nombre</div><input class="name" id="nm" maxlength="12" placeholder="Escribe tu nombre" autocomplete="off" value="${esc(name)}">
-      <p class="lead" style="margin:0">Mira la pantalla grande y arma tu piloto con las flechas. Opción actual: <b id="rowLbl" style="color:var(--gold)">${st.row}</b></p>
+      <p class="lead" style="margin:0">Mira la pantalla grande y arma tu piloto con las flechas. Opción actual: <b id="rowLbl" style="color:var(--gold)">${esc(st.row)}</b></p>
       <div class="dpad"><span></span><button class="pd sm" data-n="up">▲</button><span></span><button class="pd sm" data-n="left">◀</button><button class="pd sm" data-n="down">▼</button><button class="pd sm" data-n="right">▶</button></div>
-      <button class="btn" id="go">LISTO</button><div class="small" id="sm">Al tocar LISTO se activa el sensor para girar.</div>`;
-      const i=$("nm");i.oninput=()=>{name=i.value.toUpperCase().slice(0,12);clearTimeout(nameT);nameT=setTimeout(()=>send({t:"name",v:name}),150)};
+      <button class="btn" id="go">LISTO</button><div class="small" id="sm">Al tocar LISTO se activa el sensor. En la carrera sostén el celular en horizontal, como un volante.</div>`;
+      const i=$("nm");i.oninput=()=>{name=i.value.toUpperCase().slice(0,12);try{localStorage.setItem("turbopix-name",name)}catch(e){}clearTimeout(nameT);nameT=setTimeout(()=>send({t:"name",v:name}),150)};
       root.querySelectorAll("[data-n]").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();send({t:"nav",k:b.dataset.n});if(navigator.vibrate)navigator.vibrate(8)}));
-      $("go").onclick=async()=>{send({t:"name",v:name});$("sm").textContent="Activando sensor...";useTilt=await TILT.enable();send({t:"ready",v:1})}}
+      $("go").onclick=async()=>{send({t:"name",v:name});$("sm").textContent="Activando sensor...";const pr=TILT.enable();goLand();wake();await pr;send({t:"ready",v:1})}}
     if(ph==="ready"){root.innerHTML=`<h1 class="logo" style="font-size:34px">¡LISTO!</h1><p class="lead">Esperando a los demás pilotos. La carrera arranca sola cuando todos estén listos.</p>
-      <p class="small">${useTilt?"Durante la carrera gira el celular como un volante. Sostenlo derecho en la cuenta regresiva.":"Este celular no tiene sensor disponible: tendrás flechas para girar."}</p><button class="btn ghost" id="un">CAMBIAR MI PILOTO</button>`;
-      $("un").onclick=()=>send({t:"ready",v:0})}
-    if(ph==="race"){root.innerHTML=`<div class="row" style="justify-content:space-between"><span class="lbl">${esc(name||"Sala "+code)}</span><span class="lbl" id="clap">VUELTA ${st.lap}/${LAPS}</span></div>
-      <div class="big2" id="cpos">${st.place||"-"}/4</div>
-      ${useTilt?`<div class="wheel" id="wh"><i></i><div class="hub">GIRA</div></div>
-      <div class="row"><button class="btn ghost" id="cal" style="flex:1;padding:10px">CENTRAR</button><button class="btn ghost" id="inv" style="flex:1;padding:10px">INVERTIR GIRO</button></div>`:""}
-      ${padHTML(!useTilt)}`;bindPads(root);
-      if(useTilt){TILT.calibrate();$("cal").onclick=()=>TILT.calibrate();$("inv").onclick=()=>{TILT.inv=!TILT.inv;$("inv").classList.toggle("on",TILT.inv)}}}
-    if(ph==="end")root.innerHTML=`<h1 class="logo" style="font-size:34px">META</h1><p class="lead">Mira los resultados en la pantalla grande.</p>
-      <button class="btn" id="nx">${st.champ&&st.scr==="results"?"SIGUIENTE PISTA":"REVANCHA"}</button><button class="btn ghost" id="mn">MENÚ</button>`,$("nx").onclick=()=>send({t:"next"}),$("mn").onclick=()=>send({t:"menu"})};
-  timer=setInterval(()=>{if(phase!=="race")return;const s=useTilt?TILT.steer():PED.l-PED.r;send({t:"in",s,a:PED.a,b:PED.b});
-    const wh=$("wh");if(wh)wh.style.transform=`rotate(${-s*90}deg)`},50);
-  show();
-  try{const peer=new Peer();peer.on("open",()=>{const cn=peer.connect(PREFIX+code,{reliable:true});
-      cn.on("open",()=>{conn=cn;show()});
-      cn.on("data",m=>{if(m.t==="full"){root.innerHTML=`<h1 class="logo">SALA LLENA</h1>`;return}
+      <p class="small">${TILT.ok?"En la carrera sostén el celular en horizontal y gíralo como un volante. Quédate quieto en la cuenta regresiva.":"No se pudo leer el sensor: tendrás flechas para girar."}</p>
+      ${tiltBar()}<button class="btn ghost" id="un">CAMBIAR MI PILOTO</button>`;bindTilt(root);$("un").onclick=()=>send({t:"ready",v:0})}
+    if(ph==="race"){const tilt=TILT.ok;
+      root.innerHTML=`<div class="rc">
+        <div class="col">${tilt?`<button class="pd brk" data-h="b">FRENO</button>`:`<div class="two"><button class="pd sm" data-h="l">◀</button><button class="pd sm" data-h="r">▶</button></div>`}</div>
+        <div class="mid"><span class="lbl">${esc(name||"Sala "+code)}</span><div class="big2" id="cpos">${(st.place||"-")+"/"+(st.n||4)}</div><span class="lbl" id="clap">VUELTA ${st.lap}/${LAPS}</span>
+          ${tilt?`<div class="wheel" id="wh"><i></i><div class="hub">GIRA</div></div>${tiltBar()}`:`<button class="chip" id="useT">USAR SENSOR</button>`}<button class="chip" id="ps">II PAUSA</button></div>
+        <div class="col">${tilt?"":`<button class="pd brk" data-h="b">FRENO</button>`}<button class="pd gas" data-h="a">ACELERAR</button></div></div>
+        <div class="rot">Gira el celular en horizontal para manejar mejor</div>`;
+      bindPads(root);bindTilt(root);$("ps").onclick=()=>send({t:"pause"});
+      if($("useT"))$("useT").onclick=async()=>{goLand();if(await TILT.enable()){phase="";show()}}}
+    if(ph==="end"){root.innerHTML=`<h1 class="logo" style="font-size:34px">META</h1><p class="lead">Mira los resultados en la pantalla grande.</p>
+      <button class="btn" id="nx">${st.champ&&st.scr==="results"?"SIGUIENTE PISTA":"REVANCHA"}</button><button class="btn ghost" id="mn">MENÚ</button>`;
+      $("nx").onclick=()=>send({t:"next"});$("mn").onclick=()=>send({t:"menu"})}
+    const r=$("rty");if(r)r.onclick=()=>{tries=1;clearTimeout(rT);rT=null;busy=false;connect()}};
+  function retry(){if(dead||rT)return;conn=null;phase="";show();rT=setTimeout(()=>{rT=null;connect()},Math.min(5000,800+tries*700))}
+  function connect(){if(dead||busy)return;busy=true;tries++;
+    try{if(peer)peer.destroy()}catch(e){}conn=null;
+    try{peer=new Peer()}catch(e){busy=false;dead=true;root.innerHTML=`<h1 class="logo">SIN RED</h1><p class="lead">Este navegador no permite la conexión.</p>`;return}
+    const me=peer,giveUp=setTimeout(()=>{if(me===peer&&!conn){busy=false;retry()}},9000);
+    me.on("open",()=>{const cn=me.connect(PREFIX+code,{reliable:true});
+      cn.on("open",()=>{if(me!==peer)return;clearTimeout(giveUp);busy=false;tries=0;conn=cn;lastMsg=Date.now();send({t:"hello",cid,name});show()});
+      cn.on("data",m=>{if(me!==peer||!m)return;lastMsg=Date.now();
+        if(m.t==="full"){dead=true;root.innerHTML=`<h1 class="logo">SALA LLENA</h1><p class="lead">Ya hay 4 pilotos en esta sala.</p>`;return}
         if(m.t==="buzz"&&navigator.vibrate)navigator.vibrate(150);
-        if(m.t==="ui"){const was=st&&st.scr;st=m;if(m.scr==="race"&&was!=="race")TILT.calibrate();show()}});
-      cn.on("close",()=>{clearInterval(timer);root.innerHTML=`<h1 class="logo">DESCONECTADO</h1><p class="lead">La pantalla principal se cerró.</p>`})});
-    peer.on("error",()=>{root.innerHTML=`<h1 class="logo">SIN CONEXIÓN</h1><p class="lead">No encontré la sala ${code}. Revisa el código o escanea el QR de nuevo.</p>`})}
-  catch(e){root.innerHTML=`<h1 class="logo">SIN RED</h1><p class="lead">Este navegador no permite la conexión.</p>`}}
+        if(m.t==="ui"){const was=st&&st.scr,wasCd=st&&st.cd;st=m;if((m.scr==="race"&&was!=="race")||(wasCd&&!m.cd))TILT.calibrate();show()}});
+      const lost=()=>{if(me===peer&&conn===cn){conn=null;busy=false;retry()}};cn.on("close",lost);cn.on("error",lost)});
+    me.on("error",()=>{if(me!==peer)return;clearTimeout(giveUp);busy=false;if(!conn)retry()});
+    me.on("disconnected",()=>{try{if(!me.destroyed)me.reconnect()}catch(e){}})}
+  // latido y envío del volante
+  setInterval(()=>{if(conn&&conn.open){send({t:"hb"});if(Date.now()-lastMsg>6000){const c=conn;conn=null;try{c.close()}catch(e){}busy=false;retry()}}},1000);
+  setInterval(()=>{if(phase!=="race")return;const s=TILT.ok?TILT.steer():PED.l-PED.r;send({t:"in",s,a:PED.a,b:PED.b});
+    const wh=$("wh");if(wh)wh.style.transform=`rotate(${-s*90}deg)`},50);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden){wake();if(!conn||!conn.open){tries=1;clearTimeout(rT);rT=null;busy=false;connect()}}});
+  show();connect()}
 
 /* =========================================================
-   BUCLE PRINCIPAL
    ========================================================= */
 const clock=new THREE.Clock();let attract=0;
 function setPause(v){if(!race.on)return;race.paused=v;$("pause").hidden=!v;if(v){AU.engine(0);AU.skid(0)}}
@@ -871,13 +991,14 @@ function loop(){requestAnimationFrame(loop);const raw=Math.min(.05,clock.getDelt
     race.cars.forEach(c=>{if(c.ai||c.human==null)return;const p=G.players[c.human];if(!p)return;c.in=p.input==="remote"?(c.remote||{s:0,a:0,b:0}):localInput(p)});
     if(race.count>0){race.count-=dt;race.cars.forEach(c=>{if(c.human!=null&&c.in.a>0&&race.count>1.4)c.early=true});const L=$("lights"),on=Math.min(5,Math.floor((4-race.count)/.75)+1);L.hidden=false;
       if(on!==race.lastBeep){race.lastBeep=on;[...L.children].forEach((e,i)=>e.className=i<on?"r":"");AU.sfx("beep")}
-      if(race.count<=0){[...L.children].forEach(e=>e.className="g");const big=$("big");big.hidden=false;big.textContent="¡YA!";AU.sfx("go");AU.sfx("cheer");
+      if(race.count<=0){[...L.children].forEach(e=>e.className="g");const big=$("big");big.hidden=false;big.textContent="¡YA!";AU.sfx("go");AU.sfx("cheer");TILT.calibrate();setTimeout(()=>NET.sendAll(),0);
         race.cars.forEach(c=>{if(c.human!=null){if(c.in.a>0&&!c.early){c.turbo=1.4;say(c,"¡SALIDA PERFECTA!");AU.sfx("turbo")}else if(c.early)say(c,"¡TE ADELANTASTE!")}else if(Math.random()<.4)c.turbo=1});setTimeout(()=>{if(race.on){big.hidden=true;L.hidden=true}},800)}
       race.cars.forEach(place)}
     else{race.t+=dt;const sub=Math.max(1,Math.ceil(dt*90/1.4));for(let k=0;k<sub;k++)race.cars.forEach(c=>physics(c,dt/sub));
       for(let i=0;i<race.cars.length;i++)for(let j=i+1;j<race.cars.length;j++){const a=race.cars[i],b=race.cars[j],dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz);
         if(d<3.2&&d>0&&Math.abs(a.air-b.air)<1.5){const k=(3.2-d)/2;a.x-=dx/d*k;a.z-=dz/d*k;b.x+=dx/d*k;b.z+=dz/d*k;a.spd*=.96;b.spd*=.96;
           if((a.human!=null||b.human!=null)&&!(a.bumpT>0)){AU.sfx("bump");a.bumpT=.35;if(a.human!=null)NET.buzz(a.human);if(b.human!=null)NET.buzz(b.human)}}a.bumpT=(a.bumpT||0)-dt/6}
+      race.cars.forEach(c=>{if(c.fall<=0){clampFence(c);place(c)}});
       world.projs=world.projs.filter(p=>{p.life-=dt;if(p.tgt&&!p.tgt.finished){let a=Math.atan2(p.tgt.x-p.x,p.tgt.z-p.z)-p.h;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;p.h+=Math.max(-2.2*dt,Math.min(2.2*dt,a))}
         p.x+=Math.sin(p.h)*p.spd*dt;p.z+=Math.cos(p.h)*p.spd*dt;const i=nearest(p.x,p.z);p.y+=(world.pts[i].y+1.2-p.y)*.2;p.obj.position.set(p.x,p.y,p.z);p.obj.rotation.y=p.h;
         if(Math.random()<.6)spark(p.x,p.y,p.z,2);const t=race.cars.find(c=>c!==p.owner&&c.fall<=0&&(c.x-p.x)**2+(c.z-p.z)**2<6);
@@ -889,7 +1010,7 @@ function loop(){requestAnimationFrame(loop);const raw=Math.min(.05,clock.getDelt
       const hum=race.cars.filter(c=>c.human!=null);
       if(hum.length?hum.every(c=>c.finished):race.cars.some(c=>c.finished)){race.endT+=dt;if(race.endT>3)finishRace()}}
     if(!race.on)return;
-    const ov=$("pedOv"),cut=ov?Math.min(.45,ov.offsetHeight/H2):0,vs=views(cut);$("minimap").style.bottom=cut?(ov.offsetHeight+8)+"px":"";renderer.setScissorTest(true);
+    const ov=$("pedOv");document.body.classList.toggle("padland",!!ov&&W2>H2);const cut=ov&&H2>W2?Math.min(.45,ov.offsetHeight/H2):0,vs=views(cut);$("minimap").style.bottom=cut?(ov.offsetHeight+8)+"px":"";renderer.setScissorTest(true);
     vs.forEach((v,i)=>{const c=v.c,cam=v.cam,[x,y,w,h]=v.r,back=c.drift?8.5:9.5;
       const tp=new THREE.Vector3(c.x-Math.sin(c.h)*back,c.y+4.3+c.air*.5,c.z-Math.cos(c.h)*back);
       if(world.T.mode==="wall"&&!inShort(tp.x,tp.z)){const ci=nearest(tp.x,tp.z),q=world.pts[ci],nn=world.nor[ci],lt=(tp.x-q.x)*nn.x+(tp.z-q.z)*nn.z,lim=W/2+5.8;
