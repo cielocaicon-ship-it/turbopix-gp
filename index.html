@@ -132,7 +132,7 @@ td{padding:8px 4px;border-bottom:1px solid var(--line)}td:last-child{text-align:
   .pedOv .tbar{position:absolute;top:max(54px,env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);pointer-events:auto;width:max-content;max-width:60vw}
   .pedOv .pads{position:absolute;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:max(12px,env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;pointer-events:none}
   .pedOv .lp,.pedOv .rp{display:flex;gap:10px;pointer-events:auto}
-  .pedOv .pd{min-height:min(42vh,190px);width:min(19vw,170px);opacity:.75}.pedOv .pd.sm{min-height:min(30vh,130px);width:min(13vw,110px)}}
+  .pedOv .pd{min-height:min(38vh,180px);width:min(19vw,170px);opacity:.75}.pedOv .pd.sm{min-height:min(30vh,130px);width:min(13vw,110px)}}
 #hud.split #timer{top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 46px)}
 body.padland #minimap{bottom:auto!important;top:118px;width:clamp(70px,11vw,110px)}body.padland .vp .spd{bottom:auto;top:86px}
 .ctrl.racing{padding:10px max(10px,env(safe-area-inset-right,0px)) 10px max(10px,env(safe-area-inset-left,0px));gap:6px;overflow:hidden}
@@ -399,7 +399,7 @@ function buildTrack(ti){
   const T=TRACKS[ti],g=new THREE.Group(),pts=[],tan=[],nor=[];
   const curve=new THREE.CatmullRomCurve3(T.pts.map((p,i)=>new THREE.Vector3(p[0]*SC,T.ys?T.ys[i]*1.3:0,p[1]*SC)),true,"centripetal");
   for(let i=0;i<N;i++){const t=i/N,p=curve.getPointAt(t),d=curve.getTangentAt(t);pts.push(p);const tt=new THREE.Vector3(d.x,0,d.z).normalize();tan.push(tt);nor.push(new THREE.Vector3(tt.z,0,-tt.x))}
-  scene.background=new THREE.Color(T.sky);scene.fog=new THREE.Fog(T.fog,80,T.mode==="void"?340:300);hemi.intensity=ti===0?.6:.8;
+  const gY=Math.min(-.08,Math.min(...pts.map(p=>p.y))-.45);scene.background=new THREE.Color(T.sky);scene.fog=new THREE.Fog(T.fog,80,T.mode==="void"?340:300);hemi.intensity=ti===0?.6:.8;
   const ang=i=>Math.atan2(tan[i].x,tan[i].z);
   function strip(o0,o1,color,lift=.02,keep=null,emis=false){
     const pos=[],idx=[];for(let i=0;i<=N;i++){const k=i%N,p=pts[k],n=nor[k];pos.push(p.x+n.x*o0,p.y+lift,p.z+n.z*o0,p.x+n.x*o1,p.y+lift,p.z+n.z*o1);
@@ -431,7 +431,7 @@ function buildTrack(ti){
     segD=(x,z)=>{const ax=Bp.x-A.x,az=Bp.z-A.z,t=Math.max(0,Math.min(1,((x-A.x)*ax+(z-A.z)*az)/(ax*ax+az*az)));return Math.hypot(A.x+ax*t-x,A.z+az*t-z)}}
   if(T.mode==="wall"){strip(W/2+1.4,W/2+7,T.ground,.01);strip(-W/2-7,-W/2-1.4,T.ground,.01);
     const fc=ti===0?[0x3fd8ff,0x8a86a8,0xff3fb4]:ti===3?[0xffffff,0x2a9d8f,0xffc83d]:[0xd9a860,0x7a4a22,0x9a6a3c];
-    fence(W/2+7,keepR,...fc);fence(-W/2-7,keepL,...fc);if(T.ys){wall(W/2+7,0,T.skirt||0x9a5a2e,0);wall(-W/2-7,0,T.skirt||0x9a5a2e,0)}}
+    fence(W/2+7,keepR,...fc);fence(-W/2-7,keepL,...fc);if(T.ys){wall(W/2+7,0,T.skirt||0x9a5a2e,gY);wall(-W/2-7,0,T.skirt||0x9a5a2e,gY)}}
   else{wall(W/2+1.4,0,0x2a1450,-3);wall(-W/2-1.4,0,0x2a1450,-3)}
   const fin=new THREE.Group();for(let i=0;i<7;i++)for(let j=0;j<2;j++){const m=new THREE.Mesh(new THREE.PlaneGeometry(2,1),mat((i+j)%2?0x111111:0xffffff));m.rotation.x=-Math.PI/2;m.position.set(-6+i*2,0,j-.5);fin.add(m)}
   fin.position.set(pts[0].x,pts[0].y+.06,pts[0].z);fin.rotation.y=ang(0);g.add(fin);
@@ -441,8 +441,8 @@ function buildTrack(ti){
   if(T.ground){const geo=new THREE.PlaneGeometry(1500,1500,110,110);geo.rotateX(-Math.PI/2);const P=geo.attributes.position;
     const dist=(x,z)=>{let m=1e9;for(let i=0;i<N;i+=4){const p=pts[i],d=(p.x-x)**2+(p.z-z)**2;if(d<m)m=d}return Math.sqrt(m)};
     for(let i=0;i<P.count;i++){const x=P.getX(i),z=P.getZ(i);
-      if(ti===3){const d=dist(x,z);P.setY(i,d<W+26?-.08:d<95?.6+Math.random()*1.2:Math.max(-5,1.2-(d-95)*.09))}
-      else P.setY(i,near(x,z,W+26)?-.08:Math.random()*(ti===1?7:2.5)-.6)}
+      if(ti===3){const d=dist(x,z);P.setY(i,d<W+26?gY:d<95?.6+Math.random()*1.2:Math.max(-5,1.2-(d-95)*.09))}
+      else P.setY(i,near(x,z,W+26)?gY:Math.random()*(ti===1?7:2.5)-.6)}
     geo.computeVertexNormals();g.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:T.ground})))}
   const obstacles=[],decor=[],flags=[];
   [-1,1].forEach(sd=>obstacles.push({x:pts[0].x+nor[0].x*sd*(W/2+2),z:pts[0].z+nor[0].z*sd*(W/2+2),r:.7}));
@@ -467,7 +467,7 @@ function buildTrack(ti){
       m.position.set((Math.random()-.5)*720,(Math.random()-.5)*110,(Math.random()-.5)*720);if(near(m.position.x,m.position.z,W+8))continue;g.add(m);decor.push(m)}
     for(let i=0;i<N;i+=24){const p=pts[i];box(2,40,2,0x2a1450,p.x,p.y-20.3,p.z,g)}}
   if(ti===3){ // mar, palmeras, casitas de colores y botes
-    const sea=new THREE.Mesh(new THREE.PlaneGeometry(4000,4000),new THREE.MeshLambertMaterial({color:0x1fa3c9,emissive:0x0a3a5a}));sea.rotation.x=-Math.PI/2;sea.position.y=-1.2;g.add(sea);world_sea=sea;
+    const sea=new THREE.Mesh(new THREE.PlaneGeometry(4000,4000),new THREE.MeshLambertMaterial({color:0x1fa3c9,emissive:0x0a3a5a}));sea.rotation.x=-Math.PI/2;sea.position.y=Math.min(-1.2,gY-.8);g.add(sea);world_sea=sea;
     const dist=(x,z)=>{let m=1e9;for(let i=0;i<N;i+=4){const p=pts[i],d=(p.x-x)**2+(p.z-z)**2;if(d<m)m=d}return Math.sqrt(m)};
     const palm=(x,z,y)=>{const pg=new THREE.Group(),lean=(Math.random()-.5)*.5;let px=0,py=0;for(let k=0;k<6;k++){cyl(.42-k*.04,.48-k*.04,1.6,7,k%2?0x8a6a3a:0x9a7a4a,px,py+.8,0,pg);px+=lean*.5;py+=1.5}
       for(let k=0;k<7;k++){const l=new THREE.Mesh(new THREE.ConeGeometry(.55,4.2,4),mat(k%2?0x2f9a3a:0x3fb04a));l.scale.set(1,1,.25);l.position.set(px,py+.2,0);l.rotation.set(0,k*Math.PI*2/7,1.9);l.translateY(2);pg.add(l)}
@@ -1010,16 +1010,18 @@ function loop(){requestAnimationFrame(loop);const raw=Math.min(.05,clock.getDelt
       const hum=race.cars.filter(c=>c.human!=null);
       if(hum.length?hum.every(c=>c.finished):race.cars.some(c=>c.finished)){race.endT+=dt;if(race.endT>3)finishRace()}}
     if(!race.on)return;
-    const ov=$("pedOv");document.body.classList.toggle("padland",!!ov&&W2>H2);const cut=ov&&H2>W2?Math.min(.45,ov.offsetHeight/H2):0,vs=views(cut);$("minimap").style.bottom=cut?(ov.offsetHeight+8)+"px":"";renderer.setScissorTest(true);
+    const ov=$("pedOv"),pl=!!ov&&W2>H2;document.body.classList.toggle("padland",pl);
+    {const mm=$("minimap");if(pl){const pd=ov.querySelector(".pads"),av=(pd?pd.getBoundingClientRect().top:H2)-118-8;mm.style.display=av<55?"none":"";mm.style.width=Math.min(110,av)+"px"}else{mm.style.display="";mm.style.width=""}}const cut=ov&&H2>W2?Math.min(.45,ov.offsetHeight/H2):0,vs=views(cut);$("minimap").style.bottom=cut?(ov.offsetHeight+8)+"px":"";renderer.setScissorTest(true);
     vs.forEach((v,i)=>{const c=v.c,cam=v.cam,[x,y,w,h]=v.r,back=c.drift?8.5:9.5;
       const tp=new THREE.Vector3(c.x-Math.sin(c.h)*back,c.y+4.3+c.air*.5,c.z-Math.cos(c.h)*back);
       if(world.T.mode==="wall"&&!inShort(tp.x,tp.z)){const ci=nearest(tp.x,tp.z),q=world.pts[ci],nn=world.nor[ci],lt=(tp.x-q.x)*nn.x+(tp.z-q.z)*nn.z,lim=W/2+5.8;
         if(Math.abs(lt)>lim){tp.x-=nn.x*(lt-Math.sign(lt)*lim);tp.z-=nn.z*(lt-Math.sign(lt)*lim)}}
       if(c.shake>0){c.shake=Math.max(0,c.shake-dt*1.8);tp.x+=(Math.random()-.5)*c.shake*1.4;tp.y+=(Math.random()-.5)*c.shake;tp.z+=(Math.random()-.5)*c.shake*1.4}
-      cam.position.lerp(tp,c.fall>0?.02:race.count>3.3?1:Math.min(1,dt*7));
+      cam.position.lerp(tp,c.fall>0?.02:race.count>3.3?1:Math.min(1,dt*10));
       cam.lookAt(c.x+Math.sin(c.h)*6,c.y+1.6+c.air*.6,c.z+Math.cos(c.h)*6);
       cam.aspect=(w*W2)/(h*H2);cam.fov+=((c.turbo>0?76:62)-cam.fov)*dt*4;cam.updateProjectionMatrix();
-      renderer.setViewport(x*W2,(1-y-h)*H2,w*W2,h*H2);renderer.setScissor(x*W2,(1-y-h)*H2,w*W2,h*H2);renderer.render(scene,cam);
+      renderer.setViewport(x*W2,(1-y-h)*H2,w*W2,h*H2);renderer.setScissor(x*W2,(1-y-h)*H2,w*W2,h*H2);
+      race.cars.forEach(o=>{o.obj.visible=o===c||o.obj.position.distanceTo(cam.position)>4.5});renderer.render(scene,cam);race.cars.forEach(o=>o.obj.visible=true);
       const el=$("vp"+i);if(el){el.style.left=x*100+"%";el.style.top=y*100+"%";el.style.width=w*100+"%";el.style.height=h*100+"%";
         el.querySelector(".pos").innerHTML=G.mode==="time"?"<small>CONTRA<br>RRELOJ</small>":c.place+"<small>/"+race.cars.length+"</small>";el.querySelector(".cn span").textContent=(c.coins||0)+(c.coins>=10?" MÁX":"");el.querySelector(".lap").textContent="VUELTA "+Math.min(LAPS,Math.max(1,c.lap))+"/"+LAPS+(c.best?" · MEJOR "+fmt(c.best):"");el.classList.toggle("boost",c.turbo>0);
         el.querySelector(".spd").innerHTML=Math.round(Math.abs(c.spd)*5.2)+" <small>KM/H</small>";
