@@ -169,7 +169,9 @@ const HAIRC=[0x1a1210,0x5a3a1a,0xb5652f,0xe8c070,0xe85a9a,0x3f7fff];
 const SKINS=[0xf6d7bb,0xe6b48f,0xc68a5a,0x9a6440,0x6b4429];
 const SPECIES=[{n:"HUMANO"},{n:"GATO",ears:"tri",muz:1},{n:"PERRO",ears:"flop",snout:1},{n:"OSO",ears:"round",snout:1},
   {n:"CONEJO",ears:"long",muz:1,teeth:1},{n:"ZORRO",ears:"tri",snout:2,fur:0xe0732a},{n:"PANDA",ears:"round",snout:1,fur:0xf4f4f4,patch:1},
-  {n:"RANA",frog:1,fur:0x5cc34a},{n:"PINGÜINO",beak:1,fur:0x23232e}];
+  {n:"RANA",frog:1,fur:0x5cc34a},{n:"PINGÜINO",beak:1,fur:0x23232e},
+  {n:"JAGUAR",ears:"tri",muz:1,fur:0xe0a030,light:0xfff0d0,spots:1,iris:0x3a8a3a},{n:"GUACAMAYA",beak:2,crest:1,fur:0xe23a2a},
+  {n:"CAPIBARA",ears:"small",snout:3,wide:1,fur:0x9a6a40},{n:"OSO DE ANTEOJOS",ears:"round",snout:1,rings:1,fur:0x2a2420,light:0xe8d4a8}];
 const FURS=[0xf2efe8,0xa8743f,0x6b4429,0x8a8a96,0xe0a050];
 const HATS=["CASCO","GORRA","SIN CASCO"];
 const OUTFITS=[0xff5470,0x3fa9ff,0x35d07f,0xffc83d,0xa66bff,0xff8a3d];
@@ -215,62 +217,91 @@ function wheel(x,y,z,g,r=.42,w=.38,hub=0xcccccc){part(new THREE.CylinderGeometry
 function prof(pts,width,m,g,x=0,bevel=.12){const sh=new THREE.Shape();pts.forEach(([z,y],i)=>i?sh.lineTo(z,y):sh.moveTo(z,y));sh.closePath();
   const geo=new THREE.ExtrudeGeometry(sh,{depth:width,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:2});
   geo.rotateY(-Math.PI/2);geo.translate(width/2+x,0,0);const o=new THREE.Mesh(geo,m);g.add(o);return o}
+// ===== PILOTOS: cuerpo, cabeza humana o animal, pelo que se adapta al casco o la gorra =====
+function eye(H,x,y,z,r,iris){const e=new THREE.Group();e.position.set(x,y,z);H.add(e);
+  sph(r,mat(0xffffff),0,0,0,e,10,8);sph(r*.62,mat(iris),0,0,r*.55,e,8,6);sph(r*.34,mat(0x120c18),0,0,r*.78,e,6,5);sph(r*.2,mat(0xffffff),r*.25,r*.3,r*.9,e,4,3);
+  H.userData.eyes=(H.userData.eyes||[]).concat(e);return e}
+function cheeks(H,x,y,z){[-1,1].forEach(s=>{const c=sph(.08,new THREE.MeshBasicMaterial({color:0xff7a9a,transparent:true,opacity:.45}),s*x,y,z,H,8,6);c.scale.set(1,.6,.4)})}
+// mode: 0 sin nada en la cabeza, 1 gorra, 2 casco
+function hairFor(o,H,Hm,mode){const st=o.hair,hc=HAIRC[o.hc];
+  const shell=(y0,h)=>{const m=part(new THREE.CylinderGeometry(.452,.47,h,16,1,true,Math.PI/2,Math.PI),new THREE.MeshLambertMaterial({color:hc,side:THREE.DoubleSide}),0,y0,0,H);return m};
+  if(mode===0){part(new THREE.SphereGeometry(.468,16,10,0,Math.PI*2,0,Math.PI*.52),Hm,0,.03,-.03,H,-.28)}
+  if(mode<2&&st!==4)shell(-.06,.36);
+  if(st===0&&mode===0)part(new THREE.BoxGeometry(.5,.12,.14),Hm,0,.31,.32,H,.45);
+  if(st===1){if(mode<2)[-1,1].forEach(s=>part(new THREE.BoxGeometry(.12,.55,.34),Hm,s*.42,-.18,-.02,H,0,0,-s*.06));
+    part(new THREE.BoxGeometry(.66,.8,.16),Hm,0,-.38,-.36,H,.12);if(mode===0)part(new THREE.BoxGeometry(.6,.14,.14),Hm,0,.3,.33,H,.5)}
+  if(st===2){const y=mode===2?-.28:mode===1?-.02:.12;sph(.17,Hm,0,y,-.5,H,8,6);part(new THREE.ConeGeometry(.15,.62,8),Hm,0,y-.34,-.6,H,Math.PI-.35);
+    part(new THREE.TorusGeometry(.1,.035,4,10),mat(o.outfit),0,y,-.55,H,Math.PI/2)}
+  if(st===3){const cur=[[-.35,.15,.05],[.35,.15,.05],[-.25,.35,-.15],[.25,.35,-.15],[0,.45,0],[0,.3,-.35],[-.2,.42,.2],[.2,.42,.2],[-.38,-.1,-.2],[.38,-.1,-.2],[0,0,-.45],[-.3,-.28,-.3],[.3,-.28,-.3],[0,-.32,-.42]];
+    cur.filter(p=>mode===0||(mode===1&&p[1]<.12)||(mode===2&&p[1]<-.25)).forEach(p=>part(new THREE.IcosahedronGeometry(.19,0),Hm,...p,H))}
+  if(st===4){if(mode===0)[[-.2,.08],[.05,.15],[.22,-.05],[-.05,-.2],[.2,.25],[-.25,-.15]].forEach(([x,z])=>part(new THREE.ConeGeometry(.13,.4,4),Hm,x,.52,z,H,z*.8,0,-x*.8));
+    if(mode===0)part(new THREE.SphereGeometry(.462,14,8,0,Math.PI*2,0,Math.PI*.5),Hm,0,.04,-.02,H);
+    if(mode===1)[-.2,0,.2].forEach(x=>part(new THREE.ConeGeometry(.1,.3,4),Hm,x,.02,-.5,H,-1.2))}
+  if(st===5){const y=mode===0?.5:mode===1?-.04:-.3,z=mode===0?-.18:-.5;sph(.2,Hm,0,y,z,H,10,8);part(new THREE.TorusGeometry(.15,.04,4,12),mat(o.outfit),0,y-.05,z+(mode?.06:.03),H,mode?0:Math.PI/2.4)}}
+function humanHead(o,H,out,dark){const sk=SKINS[o.skin],S=mat(sk),Hm=mat(HAIRC[o.hc]);
+  sph(.44,S,0,0,0,H,16,12);[-1,1].forEach(s=>sph(.09,S,s*.44,0,0,H,6,5));
+  [-1,1].forEach(s=>{eye(H,s*.16,.03,.37,.085,[0x5a3a1a,0x3a6aa8,0x3a8a4a,0x5a3a1a,0x2a1a10][o.skin%5]);
+    part(new THREE.BoxGeometry(.15,.035,.03),Hm,s*.16,.17,.41,H,0,0,-s*.15)});
+  part(new THREE.ConeGeometry(.05,.1,4),mat(new THREE.Color(sk).multiplyScalar(.88).getHex()),0,-.06,.45,H,Math.PI/2);
+  part(new THREE.TorusGeometry(.08,.022,4,8,Math.PI),mat(0x8a2a3a),0,-.15,.4,H,0,0,Math.PI);cheeks(H,.25,-.08,.36);
+  const mode=o.hat===2?0:o.hat===1?1:2;hairFor(o,H,Hm,mode)}
 function animalHead(o,H,out,dark){
-  const A=SPECIES[o.sp],fc=A.fur!=null?A.fur:FURS[o.skin],F=mat(fc),lc=new THREE.Color(fc).lerp(new THREE.Color(0xffffff),.6).getHex(),L=mat(lc),
-    dk=mat(new THREE.Color(fc).multiplyScalar(.55).getHex()),pink=mat(0xff9ab0),blk=mat(0x1a1220),wht=mat(0xffffff),hat=o.hat,up=hat<2?.08:0;
-  const hd=sph(.46,F,0,0,0,H,14,10);if(A.frog)hd.scale.set(1.18,.85,1.05);
-  if(A.beak){const f=sph(.32,wht,0,-.06,.2,H,12,8);f.scale.set(1.05,1.1,.85)}
+  const A=SPECIES[o.sp],fc=A.fur!=null?A.fur:FURS[o.skin],F=mat(fc),lc=A.light!=null?A.light:new THREE.Color(fc).lerp(new THREE.Color(0xffffff),.6).getHex(),L=mat(lc),
+    dk=mat(new THREE.Color(fc).multiplyScalar(.55).getHex()),pink=mat(0xff9ab0),blk=mat(0x1a1220),wht=mat(0xffffff),up=o.hat<2?.1:0;
+  const hd=sph(.46,F,0,0,0,H,16,12);if(A.frog)hd.scale.set(1.18,.85,1.05);if(A.wide)hd.scale.set(1.08,.95,1.05);
+  if(A.beak){const f=sph(.32,A.beak===2?mat(0xfff6e0):wht,0,-.04,.2,H,12,8);f.scale.set(1.05,1.1,.85)}
   const ex=A.frog?.24:.17,ey=A.frog?.36:.05,ez=A.frog?.16:A.beak?.44:.39;
   [-1,1].forEach(s=>{if(A.frog)sph(.16,F,s*ex,ey-.05,ez,H,10,8);if(A.patch){const p=sph(.14,blk,s*.17,.02,.38,H,8,6);p.scale.set(1,1.3,.6)}
-    sph(.09,wht,s*ex,ey,ez+.03,H,8,6);sph(.055,blk,s*ex,ey,ez+.09,H,6,5);sph(.022,wht,s*ex+.02,ey+.03,ez+.13,H,4,3)});
-  // orejas
-  if(A.ears==="tri")[-1,1].forEach(s=>{part(new THREE.ConeGeometry(.18,.38,4),F,s*.27,.42+up,-.02,H,0,Math.PI/4,-s*.35);part(new THREE.ConeGeometry(.09,.22,4),A.n==="ZORRO"?blk:pink,s*.26,.4+up,.05,H,0,Math.PI/4,-s*.35)});
-  if(A.ears==="round")[-1,1].forEach(s=>{sph(.16,A.patch?blk:F,s*.31,.36+up,-.02,H,8,6);if(!A.patch)sph(.09,dk,s*.31,.36+up,.06,H,6,5)});
-  if(A.ears==="flop")[-1,1].forEach(s=>part(new THREE.BoxGeometry(.16,.52,.3),dk,s*.46,-.06,-.02,H,0,0,s*.22));
-  if(A.ears==="long")[-1,1].forEach(s=>{part(new THREE.CylinderGeometry(.08,.12,.75,8),F,s*.15,.7+up,-.05,H,0,0,-s*.15);part(new THREE.BoxGeometry(.08,.5,.03),pink,s*.16,.72+up,.03,H,0,0,-s*.15)});
+    if(A.rings){const r=part(new THREE.TorusGeometry(.12,.035,6,14),mat(0xf2deb0),s*.17,.04,.4,H);r.scale.set(1,1.15,1)}
+    eye(H,s*ex,ey,ez+.03,.09,A.iris||0x6a4a1a)});
+  if(A.spots)[[-.3,.25,.2],[.32,.22,.18],[-.15,.38,-.1],[.18,.36,-.2],[-.38,.0,-.15],[.4,-.05,-.1],[0,.42,.1],[-.25,.15,-.35],[.27,.1,-.35],[0,.2,-.42]].forEach(p=>{const d=sph(.06,mat(0x3a2410),...p,H,6,4);d.scale.set(1,1,.5);d.lookAt(0,0,0)});
+  if(A.crest)[[-.08,0],[0,.08],[.08,0]].forEach(([x,z],k)=>part(new THREE.ConeGeometry(.07,.38,5),mat([0xffc83d,0x3fa9ff,0xe23a2a][k]),x,.5+up,z-.05,H,-.4));
+  // orejas: encima del casco o la gorra, nunca dentro
+  if(A.ears==="tri")[-1,1].forEach(s=>{part(new THREE.ConeGeometry(.18,.38,4),F,s*.27,.44+up,-.02,H,0,Math.PI/4,-s*.35);part(new THREE.ConeGeometry(.09,.22,4),A.n==="ZORRO"?blk:pink,s*.26,.42+up,.06,H,0,Math.PI/4,-s*.35)});
+  if(A.ears==="round")[-1,1].forEach(s=>{sph(.16,A.patch||A.rings?blk:F,s*.31,.36+up,-.02,H,8,6);if(!A.patch&&!A.rings)sph(.09,dk,s*.31,.36+up,.07,H,6,5)});
+  if(A.ears==="small")[-1,1].forEach(s=>sph(.09,dk,s*.3,.38+up,-.05,H,6,5));
+  if(A.ears==="flop")[-1,1].forEach(s=>part(new THREE.BoxGeometry(.16,.52,.3),dk,s*.47,-.06,-.02,H,0,0,s*.22));
+  if(A.ears==="long")[-1,1].forEach(s=>{part(new THREE.CylinderGeometry(.08,.12,.75,8),F,s*.15,.72+up,-.05,H,0,0,-s*.15);part(new THREE.BoxGeometry(.08,.5,.03),pink,s*.16,.74+up,.03,H,0,0,-s*.15)});
   // hocico, nariz y boca
-  if(A.snout===1){const m=sph(.21,L,0,-.13,.36,H,10,8);m.scale.set(1.2,.8,1);sph(.075,blk,0,-.06,.55,H,8,6);part(new THREE.TorusGeometry(.06,.015,4,8,Math.PI),blk,0,-.2,.53,H,0,0,Math.PI)}
+  if(A.snout===1){const m=sph(.21,L,0,-.13,.36,H,10,8);m.scale.set(1.2,.8,1);sph(.075,blk,0,-.06,.55,H,8,6);part(new THREE.TorusGeometry(.06,.016,4,8,Math.PI),blk,0,-.2,.53,H,0,0,Math.PI)}
   if(A.snout===2){part(new THREE.ConeGeometry(.2,.42,8),L,0,-.1,.55,H,Math.PI/2);sph(.065,blk,0,-.1,.77,H,6,5)}
+  if(A.snout===3){const m=sph(.24,L,0,-.12,.34,H,12,8);m.scale.set(1.35,.85,1.05);[-1,1].forEach(s=>sph(.045,blk,s*.11,-.05,.58,H,5,4));part(new THREE.TorusGeometry(.07,.016,4,8,Math.PI),blk,0,-.2,.57,H,0,0,Math.PI)}
   if(A.muz){[-1,1].forEach(s=>{sph(.11,L,s*.08,-.13,.38,H,8,6);for(let k=0;k<3;k++)part(new THREE.BoxGeometry(.3,.012,.012),blk,s*.33,-.1+k*.05,.38,H,0,0,s*(k-1)*.18)});
     sph(.055,pink,0,-.05,.45,H,6,5);if(A.teeth)part(new THREE.BoxGeometry(.11,.09,.03),wht,0,-.22,.45,H)}
-  if(A.frog){const m=part(new THREE.TorusGeometry(.28,.025,4,14,Math.PI),blk,0,-.06,.36,H,0,0,Math.PI);m.scale.set(1,.5,1);[-1,1].forEach(s=>sph(.07,pink,s*.34,-.08,.33,H,6,5))}
-  if(A.beak)part(new THREE.ConeGeometry(.1,.3,6),mat(0xffa020),0,-.1,.58,H,Math.PI/2);
-  // casco abierto / gorra
-  if(hat===0){part(new THREE.SphereGeometry(.54,16,10,0,Math.PI*2,0,Math.PI*.4),phong(out),0,.04,-.06,H,-.35);
-    part(new THREE.TorusGeometry(.5,.035,4,18,Math.PI),phong(0xffffff),0,.12,-.1,H,-.35,Math.PI/2);part(new THREE.TorusGeometry(.47,.05,4,18),mat(dark),0,-.05,-.12,H,Math.PI/2-.35)}
-  if(hat===1){part(new THREE.SphereGeometry(.5,14,8,0,Math.PI*2,0,Math.PI*.4),mat(out),0,.06,0,H);const b=part(new THREE.CylinderGeometry(.3,.3,.04,12),mat(dark),0,.22,.46,H,.12);b.scale.set(1,1,1.3)}}
+  if(A.frog){const m=part(new THREE.TorusGeometry(.28,.025,4,14,Math.PI),blk,0,-.06,.36,H,0,0,Math.PI);m.scale.set(1,.5,1);cheeks(H,.34,-.08,.33)}
+  if(A.beak===1)part(new THREE.ConeGeometry(.1,.3,6),mat(0xffa020),0,-.1,.58,H,Math.PI/2);
+  if(A.beak===2){const b=part(new THREE.ConeGeometry(.14,.36,6),mat(0xf2e8d0),0,-.02,.58,H,Math.PI/2+.6);part(new THREE.ConeGeometry(.09,.18,6),blk,0,-.17,.5,H,Math.PI/2-.3)}
+  if(!A.frog&&!A.beak)cheeks(H,.27,-.1,.35);
+  // casco abierto o gorra (las orejas salen por encima)
+  if(o.hat===0){part(new THREE.SphereGeometry(.56,18,12,0,Math.PI*2,0,Math.PI*.47),phong(out),0,.03,-.08,H,-.5);
+    part(new THREE.TorusGeometry(.565,.035,4,20,Math.PI),phong(0xffffff),0,.03,-.08,H,-.5,Math.PI/2);part(new THREE.TorusGeometry(.53,.055,4,22),mat(dark),0,-.02,.06,H,Math.PI/2-.5)}
+  if(o.hat===1){part(new THREE.SphereGeometry(.51,16,8,0,Math.PI*2,0,Math.PI*.38),mat(out),0,.07,0,H);const b=part(new THREE.CylinderGeometry(.3,.3,.04,12),mat(dark),0,.24,.47,H,.12);b.scale.set(1,1,1.3)}}
 function buildDriver(o){
-  const g=new THREE.Group(),sk=SKINS[o.skin],hc=HAIRC[o.hc],out=o.outfit,dark=new THREE.Color(out).multiplyScalar(.55).getHex(),S=mat(sk),Hm=mat(hc);
-  part(new THREE.CylinderGeometry(.36,.46,.8,10),mat(out),0,.4,0,g);
-  part(new THREE.CylinderGeometry(.375,.4,.12,10),mat(0xffffff),0,.6,0,g);
-  part(new THREE.CylinderGeometry(.2,.26,.14,10),mat(dark),0,.84,0,g);
-  [-1,1].forEach(s=>{part(new THREE.CylinderGeometry(.12,.11,.5,8),mat(out),s*.42,.55,.2,g,1.2,0,s*.25);
-    part(new THREE.CylinderGeometry(.1,.1,.4,8),mat(out),s*.34,.5,.52,g,1.45);sph(.12,mat(0x26262e),s*.3,.5,.72,g,8,6)});
-  part(new THREE.TorusGeometry(.3,.05,6,14),mat(0x222228),0,.52,.78,g,-.3);
-  const H=new THREE.Group();H.position.set(0,1.24,0);g.add(H);
-  if(!o.sp){
-  sph(.44,S,0,0,0,H,14,10);sph(.09,S,-.44,0,0,H,6,5);sph(.09,S,.44,0,0,H,6,5);
-  [-1,1].forEach(s=>{sph(.085,mat(0xffffff),s*.16,.02,.37,H,8,6);sph(.05,mat(0x1a1220),s*.16,.02,.43,H,6,5);sph(.02,mat(0xffffff),s*.15+.015,.05,.47,H,4,3);
-    part(new THREE.BoxGeometry(.15,.035,.03),Hm,s*.16,.15,.41,H,0,0,-s*.15)});
-  part(new THREE.ConeGeometry(.05,.1,4),mat(new THREE.Color(sk).multiplyScalar(.88).getHex()),0,-.06,.45,H,Math.PI/2);
-  part(new THREE.TorusGeometry(.08,.02,4,8,Math.PI),mat(0x8a2a3a),0,-.15,.4,H,0,0,Math.PI);
-  if(o.hat!==0){
-    const cap=part(new THREE.SphereGeometry(.47,14,10,0,Math.PI*2,0,Math.PI*.55),Hm,0,.02,-.03,H,-.28);
-    if(o.hair===0)part(new THREE.BoxGeometry(.5,.12,.12),Hm,0,.3,.33,H,.4);
-    if(o.hair===1){const c=part(new THREE.CylinderGeometry(.47,.52,.85,14,1,true,Math.PI/2,Math.PI),Hm,0,-.3,0,H);c.material=new THREE.MeshLambertMaterial({color:hc,side:THREE.DoubleSide});
-      part(new THREE.BoxGeometry(.6,.14,.14),Hm,0,.28,.33,H,.5)}
-    if(o.hair===2){sph(.18,Hm,0,.05,-.5,H,8,6);part(new THREE.ConeGeometry(.15,.6,7),Hm,0,-.28,-.58,H,Math.PI-.3)}
-    if(o.hair===3)[[-.35,.15,.05],[.35,.15,.05],[-.25,.35,-.15],[.25,.35,-.15],[0,.45,0],[0,.3,-.35],[-.38,-.1,-.2],[.38,-.1,-.2],[0,0,-.45],[-.2,.42,.2],[.2,.42,.2]].forEach(p=>part(new THREE.IcosahedronGeometry(.19,0),Hm,...p,H));
-    if(o.hair===4)[[-.2,.08],[.05,.15],[.22,-.05],[-.05,-.2],[.2,.25],[-.25,-.15]].forEach(([x,z])=>part(new THREE.ConeGeometry(.12,.38,4),Hm,x,.5,z,H,z*.8,0,-x*.8));
-    if(o.hair===5){sph(.2,Hm,0,.48,-.18,H,10,8);part(new THREE.TorusGeometry(.16,.04,4,10),mat(out),0,.42,-.15,H,Math.PI/2.4)}}
-  if(o.hat===0){sph(.53,phong(out),0,.04,-.02,H,16,12);
-    part(new THREE.SphereGeometry(.545,16,8,Math.PI/2-.95,1.9,Math.PI*.36,Math.PI*.24),phong(0x14141c),0,.04,-.02,H);
-    part(new THREE.TorusGeometry(.535,.04,4,20,Math.PI),phong(0xffffff),0,.04,-.02,H,0,Math.PI/2);
-    part(new THREE.CylinderGeometry(.5,.5,.12,14),mat(dark),0,-.42,-.02,H)}
-  if(o.hat===1){part(new THREE.SphereGeometry(.49,14,8,0,Math.PI*2,0,Math.PI*.42),mat(out),0,.04,0,H);
-    const b=part(new THREE.CylinderGeometry(.3,.3,.04,12),mat(dark),0,.2,.45,H,.12);b.scale.set(1,1,1.3);sph(.05,mat(dark),0,.53,0,H,6,4)}
-  }else animalHead(o,H,out,dark);
+  const g=new THREE.Group(),out=o.outfit,dark=new THREE.Color(out).multiplyScalar(.55).getHex(),accent=new THREE.Color(out).lerp(new THREE.Color(0xffffff),.5).getHex();
+  // traje de carreras
+  part(new THREE.CylinderGeometry(.36,.46,.8,14),phong(out),0,.4,0,g);sph(.37,phong(out),0,.72,0,g,14,8).scale.set(1.15,.45,.85);
+  part(new THREE.CylinderGeometry(.375,.4,.12,14),mat(0xffffff),0,.6,0,g);part(new THREE.TorusGeometry(.43,.05,6,18),mat(0x26262e),0,.12,0,g,Math.PI/2);
+  part(new THREE.BoxGeometry(.04,.5,.03),mat(dark),0,.42,.37,g);part(new THREE.CylinderGeometry(.21,.26,.15,12),mat(dark),0,.86,0,g);
+  [-1,1].forEach(s=>{sph(.15,phong(accent),s*.42,.7,0,g,8,6);
+    const arm=new THREE.Group();arm.position.set(s*.42,.62,.05);g.add(arm);
+    part(new THREE.CylinderGeometry(.12,.11,.5,8),mat(out),0,-.07,.15,arm,1.2,0,s*.25);
+    part(new THREE.CylinderGeometry(.1,.1,.4,8),mat(out),-s*.08,-.12,.47,arm,1.45);sph(.12,mat(0x26262e),-s*.12,-.12,.67,arm,8,6);
+    g.userData[s<0?"armL":"armR"]=arm});
+  part(new THREE.TorusGeometry(.3,.05,6,16),mat(0x222228),0,.52,.78,g,-.3);
+  const H=new THREE.Group();H.position.set(0,1.24,0);g.add(H);g.userData.head=H;
+  if(!o.sp)humanHead(o,H,out,dark);else animalHead(o,H,out,dark);
+  if(!o.sp&&o.hat===0){sph(.53,phong(out),0,.04,-.02,H,18,14);
+    part(new THREE.SphereGeometry(.545,18,8,Math.PI/2-.95,1.9,Math.PI*.36,Math.PI*.24),phong(0x14141c),0,.04,-.02,H);
+    part(new THREE.TorusGeometry(.535,.04,4,22,Math.PI),phong(0xffffff),0,.04,-.02,H,0,Math.PI/2);
+    part(new THREE.CylinderGeometry(.5,.5,.12,16),mat(dark),0,-.42,-.02,H)}
+  if(!o.sp&&o.hat===1){part(new THREE.SphereGeometry(.5,16,8,0,Math.PI*2,0,Math.PI*.42),mat(out),0,.05,0,H);
+    const b=part(new THREE.CylinderGeometry(.3,.3,.04,12),mat(dark),0,.21,.46,H,.12);b.scale.set(1,1,1.3);sph(.05,mat(dark),0,.55,0,H,6,4)}
   return g}
+// animación del piloto: mira hacia la curva, parpadea y celebra en la meta
+function animDriver(c,t){const d=c.obj.userData.drv;if(!d)return;const H=d.userData.head,cel=c.finished;
+  const tz=-(c.in.s||0)*.28,ty=(c.in.s||0)*.35;H.rotation.z+=(tz-H.rotation.z)*.15;H.rotation.y+=((cel?Math.sin(t*6)*.4:ty)-H.rotation.y)*.15;
+  [d.userData.armL,d.userData.armR].forEach((a,k)=>{if(!a)return;const goal=cel?-2.5+Math.sin(t*9+k*2)*.35:c.spin>0?-1.2:0;a.rotation.x+=(goal-a.rotation.x)*.2});
+  const ph=(t+(c.blink||(c.blink=Math.random()*5)))%4.2,sy=ph<.12?.12:1;(H.userData.eyes||[]).forEach(e=>e.scale.y=sy)}
 function buildKart(o){
   const g=new THREE.Group(),body=new THREE.Group();g.add(body);const C=CARS[o.car].color,acc=o.outfit,P=phong(C),A=phong(acc),D=phong(0x1c1c24),Wt=phong(0xf2f2f6);
   const B=(w,h,d,m,x,y,z,rx=0)=>part(new THREE.BoxGeometry(w,h,d),m,x,y,z,body,rx);
@@ -309,7 +340,7 @@ function buildKart(o){
     wheel(0,.6,-1.85,body,.6,.52,acc);part(new THREE.TorusGeometry(.72,.09,4,12,Math.PI),A,0,.6,-1.85,body,0,Math.PI/2);
     wing(-1.45,1.6,1.8);B(1.1,.06,.06,mat(0x3fd8ff,1),0,.72,2.25);tail(-1.85,1.0,[-.3,.3]);
     const ug=new THREE.Mesh(new THREE.PlaneGeometry(1.2,3.4),new THREE.MeshBasicMaterial({color:acc,transparent:true,opacity:.45}));ug.rotation.x=-Math.PI/2;ug.position.y=.12;body.add(ug);dy=.98;dz=-.3}
-  const drv=buildDriver(o);drv.position.set(0,dy,dz);body.add(drv);
+  const drv=buildDriver(o);drv.position.set(0,dy,dz);body.add(drv);g.userData.drv=drv;
   const sh=new THREE.Mesh(new THREE.CircleGeometry(1.9,12),new THREE.MeshBasicMaterial({color:0,transparent:true,opacity:.35}));sh.rotation.x=-Math.PI/2;sh.position.y=.05;sh.scale.set(1,1.4,1);g.add(sh);
   g.userData.body=body;g.userData.shadow=sh;return g}
 
@@ -648,7 +679,7 @@ function place(c){const o=c.obj;o.position.set(c.x,c.y+c.air,c.z);o.rotation.y=c
   if(c.car===0)b.position.y+=.08+Math.sin(performance.now()/200+c.x)*.08;
   o.userData.shadow.position.y=-c.air+.05;o.userData.shadow.visible=c.fall<=0;
   if(o.userData.flame)o.userData.flame.scale.set(1,1+(c.turbo>0?1.2:0)+Math.random()*.3,1);
-  c.shieldM.visible=c.shield;c.shieldM.position.set(c.x,c.y+c.air+1.2,c.z);c.shieldM.rotation.y+=.02}
+  c.shieldM.visible=c.shield;c.shieldM.position.set(c.x,c.y+c.air+1.2,c.z);c.shieldM.rotation.y+=.02;animDriver(c,performance.now()/1000)}
 function rubber(c){const lead=race.cars.filter(o=>o.human!=null).reduce((m,o)=>Math.max(m,o.prog||0),0),d=(lead-(c.prog||0))/N;return d>.15?[1.05,1.12,1.18][G.diff]:d<-.2?[.85,.9,.97][G.diff]:1}
 function aiDrive(c,dt){
   const P=world.pts,t=(c.idx+10+Math.floor(Math.abs(c.spd)/5))%N,p=P[t],n=world.nor[t];let a=Math.atan2(p.x+n.x*c.aiLane-c.x,p.z+n.z*c.aiLane-c.z)-c.h;
@@ -673,7 +704,7 @@ function startRace(){
   const hum=G.players.filter(p=>p&&p.ready),cars=[],used=new Set(hum.map(p=>p.car));
   hum.forEach(p=>cars.push(makeRacer({...look(p),human:p.slot,name:pname(p),col:PCOL[p.slot],ai:!!p.away})));
   let k=0;while(G.mode!=="time"&&cars.length<4){let car=k%4;for(let j=0;j<4&&used.has(car);j++)car=(car+1)%4;used.add(car);
-    cars.push(makeRacer({human:null,name:"BOT "+(k+1),car,sp:[3,5,6,7,8,2][(k+Math.floor(Math.random()*3))%6],hair:(k*2+1)%6,hc:k%6,skin:(k*2)%5,outfit:OUTFITS[(k*2+1)%6],hat:k%3,col:"#9a96b8",ai:true,aiSkill:[.8,.9,.98][G.diff]+Math.random()*.05}));k++}
+    cars.push(makeRacer({human:null,name:"BOT "+(k+1),car,sp:[9,10,11,12,5,6,3,7,8,2][(k*3+Math.floor(Math.random()*10))%10],hair:(k*2+1)%6,hc:k%6,skin:(k*2)%5,outfit:OUTFITS[(k*2+1)%6],hat:k%3,col:"#9a96b8",ai:true,aiSkill:[.8,.9,.98][G.diff]+Math.random()*.05}));k++}
   cars.forEach((c,j)=>{const i=(N-10-Math.floor(j/2)*6)%N,p=world.pts[i],n=world.nor[i],off=j%2?-4:4;
     c.x=p.x+n.x*off;c.z=p.z+n.z*off;c.y=p.y;c.h=Math.atan2(world.tan[i].x,world.tan[i].z);c.idx=c.prevIdx=i;c.prog=i;place(c)});
   TILT.calibrate();race.cars=cars;race.t=0;race.count=3.99;race.on=true;race.endT=0;race.lastBeep=0;race.fast=false;race.paused=false;race.rec=null;
@@ -700,7 +731,7 @@ const pname=p=>(p.name||"").trim()||"JUGADOR "+(p.slot+1);
 const look=p=>({car:p.car,sp:p.sp||0,hair:p.hair,hc:p.hc,skin:p.skin,outfit:OUTFITS[p.out],hat:p.hat});
 const newSel=s=>({slot:s,sp:[0,1,3,4][s],hair:s%6,hc:s%6,skin:(s+1)%5,car:s%4,out:s,hat:0,name:"",row:1,ready:false});
 const ROWS=[["name","NOMBRE"],["sp","PERSONAJE"],["hair","PEINADO"],["hc","PELO"],["skin","PIEL"],["out","TRAJE"],["hat","CABEZA"],["car","AUTO"]];
-const LISTS={sp:9,hair:6,hc:6,skin:5,out:6,hat:3,car:4};
+const LISTS={sp:13,hair:6,hc:6,skin:5,out:6,hat:3,car:4};
 const cycle=(s,k,d)=>{s[k]=(s[k]+d+LISTS[k])%LISTS[k]};
 const hexs=c=>"#"+c.toString(16).padStart(6,"0");
 const allReady=()=>G.players.some(p=>p&&!p.away)&&G.players.every(p=>!p||p.ready||p.away);
@@ -710,7 +741,7 @@ let prevR=null,prevScene=null,prevCam=null,prevRot=.6;const prevCache={};
 function drawPreviews(dt){const cs=document.querySelectorAll("canvas[data-pv]");if(!cs.length)return;
   if(!prevR){prevR=new THREE.WebGLRenderer({antialias:true,alpha:true});prevR.setPixelRatio(1);prevR.setSize(240,240,false);prevScene=new THREE.Scene();
     prevScene.add(new THREE.HemisphereLight(0xffffff,0x554477,.9));const l=new THREE.DirectionalLight(0xffffff,.8);l.position.set(4,8,6);prevScene.add(l);
-    prevCam=new THREE.PerspectiveCamera(36,1,.1,100);prevCam.position.set(6,4.2,7.5);prevCam.lookAt(0,1,0)}
+    prevCam=new THREE.PerspectiveCamera(36,1,.1,100);prevCam.position.set(4.4,3.5,5.4);prevCam.lookAt(0,1.45,0)}
   prevRot+=dt*.8;
   cs.forEach(cv=>{const k=cv.dataset.pv,p=k==="L"?G.players[G.local]:G.players[+k],lk=k[0]==="R"?(G.last[+k.slice(1)]||{}).look:p&&look(p);if(!lk)return;const key=JSON.stringify(lk);let e=prevCache[k];
     if(!e||e.key!==key){if(e)prevScene.remove(e.obj);e=prevCache[k]={key,obj:buildKart(lk)};prevScene.add(e.obj)}

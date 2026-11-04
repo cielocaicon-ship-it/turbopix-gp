@@ -6,7 +6,7 @@ Juego web 3D de carreras de karts en low poly. Se juega en el navegador, solo co
 
 - 4 pistas: Pixel City, Chiptune Desert, Glitch Void y Costa Caribe.
 - Modos: carrera rápida, campeonato y contrarreloj.
-- 9 personajes (humanos y animales) y 4 autos personalizables.
+- 13 personajes (humanos y animales, entre ellos jaguar, guacamaya, capibara y oso de anteojos) y 4 autos personalizables.
 - Rampas, turbos, monedas, obstáculos y power-ups.
 
 Las instrucciones para jugar están en `LEEME.txt`.
