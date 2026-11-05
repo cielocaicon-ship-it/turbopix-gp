@@ -24,6 +24,9 @@ JUGAR EN GRUPO (PC + celulares, hasta 4)
 - Si un celular se sale (o se le va la señal) y vuelve a entrar, recupera su mismo puesto.
   Mientras no está, un bot maneja su carro. Si no vuelve en 25 segundos, se libera el puesto.
 - Si todos se salen, el PC vuelve solo al menú.
+- No hace falta estar en el mismo wifi: si un celular no logra la conexión directa,
+  se pasa solo al MODO INTERNET (o tocan "CONECTAR POR INTERNET" mientras conecta).
+  Así juegan con cualquier wifi o con datos.
 - Si recargas la página del PC, el código cambia y todos deben volver a entrar.
 
 EN COMPUTADOR (teclado)
