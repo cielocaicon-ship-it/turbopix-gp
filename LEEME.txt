@@ -18,7 +18,7 @@ JUGAR SOLO (celular)
 JUGAR EN GRUPO (PC + celulares, hasta 4)
 - Abre el enlace en el PC: sale un QR y un código de 4 letras.
 - Cada amigo escanea el QR con la cámara (o abre el enlace y escribe el código en UNIRME).
-- En el celular escribe su nombre y con las flechas arma su piloto, que se ve en el PC.
+- En el celular cada uno arma su piloto (peinado, colores, casco y nave) y se ve en vivo en el PC.
 - Cuando todos tocan LISTO, empieza la carrera con pantalla dividida en el PC.
 - En la carrera el celular va en horizontal: FRENO a la izquierda, ACELERAR a la derecha.
 - Si un celular se sale (o se le va la señal) y vuelve a entrar, recupera su mismo puesto.
